@@ -1,0 +1,147 @@
+{
+  "id": "hcm-independence-sample",
+  "title": "Tư tưởng Hồ Chí Minh về độc lập dân tộc và cách mạng giải phóng dân tộc",
+  "reviewStatus": "teacher-review-required",
+  "answers": [
+    { "id": "A01", "code": "★01", "text": "Quyền dân tộc" },
+    { "id": "A02", "code": "★02", "text": "Tam dân" },
+    { "id": "A03", "code": "★03", "text": "Hiệp định Sơ bộ" },
+    { "id": "A04", "code": "★04", "text": "Đường cách mệnh" },
+    { "id": "A05", "code": "★05", "text": "Liên minh công – nông" },
+    { "id": "A06", "code": "★06", "text": "Bạo lực cách mạng" },
+    { "id": "A07", "code": "★07", "text": "Cách mạng vô sản" },
+    { "id": "A08", "code": "★08", "text": "Giải phóng dân tộc" },
+    { "id": "A09", "code": "★09", "text": "Chủ nghĩa xã hội" },
+    { "id": "A10", "code": "★10", "text": "Di chúc" },
+    { "id": "A11", "code": "★11", "text": "Độc lập mị dân" },
+    { "id": "A12", "code": "★12", "text": "Luận cương về vấn đề dân tộc và thuộc địa" }
+  ],
+  "decoys": [
+    { "id": "D01", "text": "Cương lĩnh chính trị đầu tiên" },
+    { "id": "D02", "text": "Giải phóng giai cấp" },
+    { "id": "D03", "text": "Tuyên ngôn Độc lập" },
+    { "id": "D04", "text": "Liên minh công – nông – trí" },
+    { "id": "D05", "text": "Đấu tranh nghị trường" },
+    { "id": "D06", "text": "Chủ nghĩa dân tộc" }
+  ],
+  "questions": [
+    {
+      "id": "Q01", "kind": "fill",
+      "text": "Hồ Chí Minh tiếp cận độc lập dân tộc từ quyền con người, rồi phát triển nâng lên thành ______.",
+      "answerId": "A01", "hint": "Hai chữ, chữ cuối là “dân tộc”"
+    },
+    {
+      "id": "Q02", "kind": "fill",
+      "text": "Hồ Chí Minh tiếp thu điểm tích cực trong thuyết “______” của Tôn Trung Sơn khi nhấn mạnh độc lập phải gắn với tự do, hạnh phúc của nhân dân.",
+      "answerId": "A02", "hint": "Tên một học thuyết gồm con số + “dân”"
+    },
+    {
+      "id": "Q03", "kind": "fill",
+      "text": "Văn kiện ký ngày 6-3-1946 buộc Pháp thừa nhận Việt Nam Dân chủ Cộng hòa là quốc gia tự do có Chính phủ, Nghị viện, Quân đội và Tài chính riêng: ______.",
+      "answerId": "A03", "hint": "Một hiệp định, không phải hiệp ước"
+    },
+    {
+      "id": "Q04", "kind": "fill",
+      "text": "Trong tác phẩm ______ (1927), Người viết: “Cách mệnh trước hết phải có đảng cách mệnh…”.",
+      "answerId": "A04", "hint": "Tên tác phẩm bắt đầu bằng “Đường”"
+    },
+    {
+      "id": "Q05", "kind": "fill",
+      "text": "Toàn dân tham gia cách mạng nhưng phải lấy ______ làm gốc (nền tảng).",
+      "answerId": "A05", "hint": "Liên minh của hai giai cấp"
+    },
+    {
+      "id": "Q06", "kind": "fill",
+      "text": "Chủ nghĩa thực dân dùng vũ lực để xâm lược, nên muốn đánh đổ chúng tất yếu phải dùng ______.",
+      "answerId": "A06", "hint": "Bắt đầu bằng “Bạo lực”"
+    },
+    {
+      "id": "Q07", "kind": "fill",
+      "text": "Muốn cứu nước và giải phóng dân tộc, không có con đường nào khác con đường ______.",
+      "answerId": "A07", "hint": "Cách mạng của giai cấp công nhân"
+    },
+    {
+      "id": "Q08", "kind": "fill",
+      "text": "Đối với các nước thuộc địa, ______ là nhiệm vụ trước hết, trên hết.",
+      "answerId": "A08", "hint": "Giải phóng… (không phải giai cấp)"
+    },
+    {
+      "id": "Q09", "kind": "fill",
+      "text": "Theo Hồ Chí Minh, độc lập dân tộc phải gắn liền với ______.",
+      "answerId": "A09", "hint": "Một chế độ xã hội"
+    },
+    {
+      "id": "Q10", "kind": "fill",
+      "text": "Câu “Tổ quốc ta nhất định sẽ thống nhất. Đồng bào Nam Bắc nhất định sẽ sum họp một nhà” được Người khẳng định trong ______.",
+      "answerId": "A10", "hint": "Văn bản cuối cùng Người để lại"
+    },
+    {
+      "id": "Q11", "kind": "fill",
+      "text": "Hồ Chí Minh kiên quyết phê phán thứ “______” giả hiệu do thực dân dựng lên qua chính phủ bù nhìn.",
+      "answerId": "A11", "hint": "Độc lập… (lừa dối dân)"
+    },
+    {
+      "id": "Q12", "kind": "fill",
+      "text": "Hồ Chí Minh tiếp thu lý luận Mác – Lênin qua ______.",
+      "answerId": "A12", "hint": "Văn kiện của Lênin, bắt đầu bằng “Luận cương”"
+    },
+    {
+      "id": "Q13", "kind": "fill",
+      "text": "Phong trào giải phóng dân tộc ở thuộc địa có thể chủ động giành thắng lợi trước ______ ở chính quốc.",
+      "answerId": "A07", "hint": "Cùng đáp án với một câu khác về “con đường”"
+    },
+    {
+      "id": "Q14", "kind": "fill",
+      "text": "Mác và Ăngghen đi từ giải phóng giai cấp đến ______; Hồ Chí Minh đảo ngược thứ tự đó cho thuộc địa.",
+      "answerId": "A08", "hint": "Ngược với “giải phóng giai cấp”"
+    },
+    {
+      "id": "Q15", "kind": "abc",
+      "text": "Khẩu hiệu “Không có gì quý hơn độc lập, tự do” ra đời năm nào?",
+      "options": { "A": "1946", "B": "1958", "C": "1966" },
+      "correctOption": "C", "hint": "Thời kỳ kháng chiến chống Mỹ"
+    },
+    {
+      "id": "Q16", "kind": "abc",
+      "text": "Câu “Nước Việt Nam là một, dân tộc Việt Nam là một” được Người nói năm nào?",
+      "options": { "A": "1946", "B": "1958", "C": "1969" },
+      "correctOption": "B", "hint": "Sau Hiệp định Genève"
+    },
+    {
+      "id": "Q17", "kind": "abc",
+      "text": "Yêu sách của nhân dân An Nam được gửi năm nào?",
+      "options": { "A": "1911", "B": "1919", "C": "1930" },
+      "correctOption": "B", "hint": "Ngay sau Chiến tranh thế giới thứ nhất"
+    },
+    {
+      "id": "Q18", "kind": "abc",
+      "text": "Vì sao liên minh công – nông là nền tảng của khối đại đoàn kết?",
+      "options": {
+        "A": "Đông đảo nhất, bị bóc lột nặng nề nhất, tinh thần cách mạng triệt để nhất",
+        "B": "Có trình độ học vấn cao nhất",
+        "C": "Được Quốc tế Cộng sản chỉ định"
+      },
+      "correctOption": "A", "hint": "Nghĩ về số lượng và mức độ bị áp bức"
+    },
+    {
+      "id": "Q19", "kind": "abc",
+      "text": "Theo Hồ Chí Minh, bạo lực cách mạng là gì?",
+      "options": {
+        "A": "Bạo lực của quân đội chính quy",
+        "B": "Đấu tranh vũ trang đơn thuần",
+        "C": "Bạo lực của quần chúng, kết hợp lực lượng chính trị và quân sự"
+      },
+      "correctOption": "C", "hint": "Có cả chính trị lẫn quân sự"
+    },
+    {
+      "id": "Q20", "kind": "abc",
+      "text": "Nền độc lập thật sự, hoàn toàn phải được thực hiện trên những lĩnh vực nào?",
+      "options": {
+        "A": "Chính trị, kinh tế, quân sự, ngoại giao",
+        "B": "Chỉ riêng chính trị",
+        "C": "Văn hoá và giáo dục"
+      },
+      "correctOption": "A", "hint": "Bốn lĩnh vực"
+    }
+  ]
+}

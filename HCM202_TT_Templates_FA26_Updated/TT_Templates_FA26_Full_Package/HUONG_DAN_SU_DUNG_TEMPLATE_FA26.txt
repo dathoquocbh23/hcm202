@@ -1,0 +1,40 @@
+================================================================================
+HỆ THỐNG THƯ MỤC HỒ SƠ CHUẨN HÓA TT — HỌC KỲ FALL 2026 (FA26)
+BỘ MÔN LÝ LUẬN CHÍNH TRỊ VÀ KỸ NĂNG MỀM • ĐẠI HỌC FPT TP.HỒ CHÍ MINH
+Áp dụng cho các học phần: HCM202, MLN111, MLN122, MLN131, VNR202
+================================================================================
+
+1. NGUYÊN TẮC QUẢN TRỊ HỒ SƠ
+- Mỗi nhóm sinh viên bắt buộc duy trì một Thư mục Google Drive dùng chung theo cấu trúc 15 thư mục (từ 00 đến 14) dưới đây.
+- Link thư mục Drive phải được phân quyền "Viewer" hoặc "Commenter" cho Giảng viên ngay từ Tuần 1.
+- Mọi minh chứng phải có dấu vết thực tế (real trace), không nộp các file trống hoặc làm dồn vào cuối kỳ.
+
+2. CẤU TRÚC 15 THƯ MỤC CHI TIẾT:
+├── 00_README_HuongDanNopHoSo          : Cẩm nang nộp bài, checklist tự kiểm định hồ sơ trước giờ G.
+├── 01_Registration_ConceptNote        : Phiếu đăng ký Topic ID, Central Question, mục tiêu học tập.
+├── 02_Product_Final                   : File sản phẩm cuối cùng (PNG, MP4, Web app link, Game, Podcast...).
+├── 03_Product_Dossier                 : Hồ sơ thuyết minh học thuật toàn diện (căn cứ giáo trình, cấu trúc, ý nghĩa).
+├── 04_Product_Prototype_DevelopmentLog: Nhật ký tiến hóa sản phẩm qua các vòng lặp (v0.1, v1.0, v2.0).
+├── 05_Showcase_Slides_Script          : Bộ slide thuyết trình báo cáo và kịch bản phân vai theo phút.
+├── 06_Defense_Log_PhanBienBaoVe_3C    : Biên bản phản biện 3C (Context-Concept-Conflict) & cam kết No-AI live rebuttal.
+├── 07_AI_Declaration_Integrity_PromptLog: Bản cam kết liêm chính & Nhật ký Prompt Log (QĐ 766 & TT 49/2026).
+├── 08_Source_Verification_Log         : Sổ đối chiếu nguồn học thuật, trích dẫn chính xác số Tập và Trang.
+├── 09_Interaction_Feedback_Evidence   : Minh chứng tương tác người xem, form khảo sát, feedback thực tế.
+├── 10_Group_Process_Worklog           : Nhật ký phân công và chấm công tiến độ làm việc nhóm theo tuần.
+├── 11_Individual_Contribution_Ownership: Bảng tự đánh giá và đánh giá chéo mức độ đóng góp cá nhân (chấm tiêu chí 2.3).
+├── 12_Final_Revision_Reflection       : Báo cáo chỉnh sửa v2 và bài học phản tư sau buổi Showcase.
+├── 13_GV_Review_Checklist             : Bảng kiểm và rubric đánh giá của Giảng viên (A1: 3-1-2-2-2 / A2: 3-4-3).
+└── 14_File_Naming_Index               : Bảng tra cứu quy ước đặt tên file chuẩn bộ môn.
+
+3. QUY ƯỚC ĐẶT TÊN FILE CHUẨN MỰC (FILE NAMING CONVENTION):
+[MÃ_MÔN]_[LỚP]_[NHÓM]_[TÊN_THÀNH_PHẦN]_[PHIÊN_BẢN].[ĐỊNH_DẠNG]
+Ví dụ:
+- HCM202_SE1801_Nhom02_01_ConceptNote_v1.0.docx
+- HCM202_SE1801_Nhom02_03_ProductDossier_v2.0.docx
+- HCM202_SE1801_Nhom02_07_AIPromptLog_v1.0.xlsx
+- HCM202_SE1801_Nhom02_02_FinalProduct_Infographic.png
+
+4. CĂN CỨ ĐÁNH GIÁ VÀ CHẾ TÀI HỌC VỤ FALL 2026:
+- Assignment 1 (Sản phẩm - 20%): Chấm theo Rubric 3-1-2-2-2 (1.1 Lý luận /3, 1.2 Thực tiễn /1, 1.3 Sáng tạo /2, 1.4 AI liêm chính /2, 1.5 Tương tác /2).
+- Assignment 2 (Thuyết trình - 20%): Chấm theo Rubric 3-4-3 (2.1 Trình bày /3, 2.2 Phản biện 3C /4, 2.3 Đánh giá nội bộ cá nhân /3 - bãi bỏ Peer Factor).
+- Áp dụng nghiêm ngặt Bảng gắn cờ vi phạm: Cờ ĐỎ (0/10đ), Cờ CAM (trừ 2-4đ, cap ≤7.0), Cờ VÀNG (trừ 0.5-1đ) theo Điều 10 Thông tư 49/2026/TT-BGDĐT.
