@@ -4,10 +4,13 @@
 
 ## Chạy ứng dụng
 
-Yêu cầu Node.js **22.13 trở lên** và npm. Từ thư mục mã nguồn:
+Yêu cầu Node.js **22.13 trở lên**, npm và một project Supabase. Từ thư mục mã nguồn:
 
 ```powershell
 npm install
+Copy-Item .env.example .env.local
+# Điền cấu hình trong .env.local và chạy SQL theo hướng dẫn dưới đây.
+npm run supabase:check
 npm run dev
 ```
 
@@ -15,7 +18,36 @@ Mở `http://localhost:3000`. Máy chủ lắng nghe mọi giao diện mạng đ
 
 Để xem luồng thi đấu mà không cần tạo phòng hoặc đăng nhập, mở `/demo/desk-flow`. Bản xem thử không đếm giờ và không lưu kết quả. Chọn câu hỏi, đánh kỹ năng công, rồi chuyển sang góc nhìn **Đội Đỏ**: đội thủ đọc câu hỏi và có thể dùng kỹ năng ngay cạnh nút **Chốt đáp án**. Thẻ kỹ năng đã dùng xuất hiện trên bàn học. Nút **Admin theo dõi** cho thấy góc nhìn công khai, không hiển thị bảng chọn hoặc thẻ riêng của đội.
 
-File `.env.local` cần có `ADMIN_PASSWORD` dài tối thiểu 12 ký tự. Đổi mật khẩu trong file này rồi khởi động lại server nếu muốn thay mật khẩu quản trị. File này được loại khỏi Git. Ứng dụng lưu phòng và diễn biến vào `data/arena.sqlite` để tiếp tục sau khi khởi động lại.
+Chỉ sao chép `.env.example` nếu chưa có `.env.local`, tránh ghi đè cấu hình đã điền. Các file môi trường riêng được loại khỏi Git. Ứng dụng lưu phòng, đội, bộ câu hỏi, diễn biến và kết quả trong Supabase PostgreSQL; không còn dùng SQLite.
+
+## Thiết lập Supabase
+
+1. Trong project Supabase, mở **SQL Editor**, dán nội dung [`supabase/migrations/001_arena_rooms.sql`](supabase/migrations/001_arena_rooms.sql) và bấm **Run**.
+2. Mở **Settings → API Keys**, lấy **Secret key** (`sb_secret_...`). Điền vào `.env.local`:
+
+   ```dotenv
+   SUPABASE_URL=https://slppvgumlwuuclqgnevt.supabase.co
+   SUPABASE_SECRET_KEY=sb_secret_thay_bang_khoa_cua_ban
+   ADMIN_PASSWORD=thay-bang-mat-khau-rieng-it-nhat-12-ky-tu
+   ```
+
+URL cũng có thể đặt bằng `NEXT_PUBLIC_SUPABASE_URL`. Nếu có cả hai biến, ứng dụng ưu tiên `SUPABASE_URL`. `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` không được dùng trong luồng API hiện tại; server vẫn cần khóa bí mật riêng.
+
+3. Chạy `npm run supabase:check`. Lệnh này chỉ kiểm tra kết nối và đọc bảng, không tạo hay sửa dữ liệu.
+4. Chạy `npm run dev`, vào `/admin`, đăng nhập bằng `ADMIN_PASSWORD` và tạo phòng chơi thử đầu tiên. Bộ câu hỏi mẫu tự được thêm vào phòng.
+
+Khóa Supabase chỉ nằm trên server, không thêm tiền tố `NEXT_PUBLIC_`. Nếu project dùng khóa cũ, đặt `SUPABASE_SERVICE_ROLE_KEY` thay cho `SUPABASE_SECRET_KEY`. Publishable/anon key không đủ quyền cho kiến trúc này. Bảng `arena_rooms` bật RLS và không cấp quyền cho `anon`/`authenticated`; trình duyệt truy cập qua API Next.js đã kiểm tra phiên Admin/đội/khán giả. Không tạo policy cho phép công khai đọc `body`, vì trường này có đáp án và thẻ riêng của đội. Xem [tài liệu API keys của Supabase](https://supabase.com/docs/guides/getting-started/api-keys).
+
+Không cần bật Supabase Auth, Storage hoặc Realtime cho các chức năng hiện tại. Đăng nhập Admin và phiên đội dùng cookie của ứng dụng; màn hình lấy trạng thái qua API mỗi 1,2 giây. Đổi `ADMIN_PASSWORD` sẽ vô hiệu phiên Admin cũ và ảnh hưởng liên kết khán giả của phòng đã tạo, nên giữ cùng mật khẩu khi chuyển môi trường.
+
+## Deploy lên Vercel
+
+1. Đưa code lên repository rồi import repository đó vào Vercel. Chọn framework **Next.js**, Node.js **22.x** hoặc **24.x**. Dùng lệnh build mặc định `npm run build`.
+2. Thêm `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (hoặc `SUPABASE_SERVICE_ROLE_KEY`) và `ADMIN_PASSWORD` trong **Project Settings → Environment Variables** cho **Production**. Điền giá trị thật, không dùng giá trị mẫu và không đặt dấu nháy bao quanh giá trị trong giao diện Vercel.
+3. Deploy. Nếu thêm hoặc đổi biến môi trường sau đó, redeploy để bản chạy nhận cấu hình mới.
+4. Vào `/admin` trên tên miền Vercel, tạo phòng, thử tham gia bằng cửa sổ khác và kiểm tra danh sách đội. Sau đó gửi liên kết Vercel cho các đội; các thiết bị chỉ cần Internet.
+
+Giao diện và API được deploy chung trên Vercel. Không cần server Node.js riêng, file database trên Vercel, cron hay Supabase Edge Functions. Nếu dùng Preview, nên cấu hình một project Supabase khác để phòng chơi thử không chung dữ liệu Production. Xem [Vercel Functions](https://vercel.com/docs/functions).
 
 ## Tổ chức một giải
 
@@ -36,11 +68,13 @@ File `.env.local` cần có `ADMIN_PASSWORD` dài tối thiểu 12 ký tự. Đ�
 - `src/app`: trang và API Next.js App Router.
 - `src/features/game`: luật thi đấu, dữ liệu bộ mẫu, màn hình bàn học và màn hình thao tác.
 - `src/features/rooms`: phòng chờ, Admin, thư viện thẻ.
-- `src/lib/server`: phiên truy cập, lưu trữ SQLite, chiếu trạng thái riêng cho Admin/đội/trình chiếu.
+- `src/lib/server`: phiên truy cập, lưu trữ Supabase qua REST API, chiếu trạng thái riêng cho Admin/đội/trình chiếu.
+- `supabase/migrations`: SQL tạo bảng và quyền truy cập.
 - `tests/game.test.ts`: kiểm tra luật thi đấu trọng yếu.
+- `tests/room-store.test.ts`: kiểm tra lưu trữ, thao tác đồng thời, chống lệnh trùng, đồng hồ và dữ liệu riêng bằng REST giả lập; không thay thế kiểm tra trên Supabase thật.
 
 Các lệnh kiểm tra: `npm run typecheck`, `npm test`, `npm run build`. Chạy bản production với `npm run build` rồi `npm start`.
 
 Để tự chạy lại một trận demo từ đầu, khởi động server rồi chạy `node tests/live-demo.mjs` trong terminal khác. Script tạo một phòng chơi thử với bốn đội, cho hai đội đấu hai lượt, tạm dừng để xem Admin, sau đó tiếp tục đến kết quả khi nhấn Enter. Phòng demo được giữ trong danh sách Admin để xem lại.
 
-Ứng dụng dùng một tiến trình Node.js và cơ sở dữ liệu SQLite trên cùng máy chủ; không chạy nhiều instance Next.js với cùng file SQLite khi tổ chức giải trực tiếp. Đặt sau HTTPS/reverse proxy nếu mở ra Internet. Khi chỉ sử dụng trong lớp, các thiết bị cần cùng mạng và đồng hồ đếm dựa vào thời gian máy chủ.
+Mỗi lần ghi kiểm tra cột `version` trên Supabase để tránh ghi đè khi nhiều instance Vercel cập nhật cùng một phòng. Heartbeat tăng phiên bản lưu trữ nhưng không làm mất hiệu lực thao tác trên giao diện. Đồng hồ dựa trên deadline lưu trong database; API xử lý các mốc đã hết hạn khi có yêu cầu tiếp theo, không dùng `setInterval` nền. Nếu tất cả thiết bị đóng trang, trạng thái lưu được cập nhật khi có người mở lại, theo thời gian đã trôi qua; hãy tạm dừng trận trước khi nghỉ nếu muốn giữ nguyên thời gian. Máy chạy local cũng cần Internet để kết nối Supabase.

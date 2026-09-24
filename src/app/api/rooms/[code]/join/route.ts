@@ -9,7 +9,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     checkOrigin(request);
     const { code } = await params;
     const body = await request.json() as { name?: string };
-    const joined = joinRoom(code, body.name ?? '');
+    const joined = await joinRoom(code, body.name ?? '');
     const response = json({ code: joined.room.code, teamId: joined.team.id, status: joined.team.status }, 201);
     response.cookies.set(`arena_team_${joined.room.code}`, joined.token, { httpOnly: true, sameSite: 'lax', secure: cookieSecure(request), path: '/', maxAge: 60 * 60 * 24 * 30 });
     return response;

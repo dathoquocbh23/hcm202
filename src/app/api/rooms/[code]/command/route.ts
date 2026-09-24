@@ -9,7 +9,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     checkOrigin(request);
     const { code } = await params;
-    const room = getRoom(code);
+    const room = await getRoom(code);
     if (!room) return fail(new Error('Không tìm thấy phòng thi.'), 404);
     const viewer = viewerFor(request, room);
     if (!viewer || viewer.role === 'display') return fail(new Error('Bạn không có quyền điều khiển phòng này.'), 403);
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (!match) return fail(new Error('Không tìm thấy trận đấu.'), 404);
       command.action.answerId = decodeAnswer(room, match, command.action.answerId);
     }
-    const updated = commandRoom(code, viewer, command, body.commandId || randomUUID(), body.expectedRevision!);
+    const updated = await commandRoom(code, viewer, command, body.commandId || randomUUID(), body.expectedRevision!);
     return json(projectRoom(updated, viewer));
   } catch (error) {
     const message = error instanceof Error ? error.message : '';

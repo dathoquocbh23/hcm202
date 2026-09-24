@@ -1,34 +1,13 @@
 import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
-import { mkdirSync } from 'node:fs';
-import path from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
-import { advanceGame, actGame, createGame } from '@/features/game/engine';
-import sampleJson from '@/features/game/data/sample-set.json';
-import { skillById } from '@/features/game/skills';
-import { validateQuestionSet } from '@/features/game/validate-set';
-import type { GameCommand, GameState, Match, QuestionSet, Room, Team, Viewer } from '@/features/game/types';
+import { insertStoredRoom, listStoredRooms, readStoredRoom, updateStoredRoom } from './room-repository.ts';
+import { advanceGame, actGame, createGame } from '../../features/game/engine.ts';
+import sampleJson from '../../features/game/data/sample-set.json' with { type: 'json' };
+import { skillById } from '../../features/game/skills.ts';
+import { validateQuestionSet } from '../../features/game/validate-set.ts';
+import type { GameCommand, GameState, Match, QuestionSet, Room, Team, Viewer } from '../../features/game/types.ts';
 
 const sampleSet = sampleJson as unknown as QuestionSet;
 const palette: Team['color'][] = ['red', 'yellow', 'green', 'blue'];
-const scope = globalThis as typeof globalThis & { __arenaDb?: DatabaseSync; __arenaTimer?: ReturnType<typeof setInterval> };
-
-function db(): DatabaseSync {
-  if (!scope.__arenaDb) {
-    const file = path.join(process.cwd(), 'data', 'arena.sqlite');
-    mkdirSync(path.dirname(file), { recursive: true });
-    const opened = new DatabaseSync(file);
-    opened.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, body TEXT NOT NULL);');
-    scope.__arenaDb = opened;
-  }
-  if (!scope.__arenaTimer) {
-    scope.__arenaTimer = setInterval(() => {
-      try { tickAllRooms(); } catch (error) { console.error('Arena timer failed', error); }
-    }, 1000);
-    scope.__arenaTimer.unref();
-  }
-  return scope.__arenaDb;
-}
-
 function hash(value: string): string { return createHash('sha256').update(value).digest('hex'); }
 function equal(a: string, b: string): boolean {
   const left = Buffer.from(a); const right = Buffer.from(b);
@@ -61,50 +40,34 @@ export function validDisplayToken(room: Room, token: string | null): boolean {
 
 export function adminDisplayToken(room: Room): string { return displayToken(room.code); }
 
-function row(code: string): Room | null {
-  const record = db().prepare('SELECT body FROM rooms WHERE code = ?').get(code) as { body: string } | undefined;
-  if (!record) return null;
-  const room = JSON.parse(record.body) as Room;
-  room.processedCommands ??= [];
-  return room;
+export async function getRoom(code: string): Promise<Room | null> {
+  const room = await readStoredRoom(code);
+  if (!room || !needsTick(room)) return room;
+  return tickRoom(room.code);
 }
 
-function write(room: Room): void {
-  db().prepare('INSERT INTO rooms (code, body) VALUES (?, ?) ON CONFLICT(code) DO UPDATE SET body=excluded.body').run(room.code, JSON.stringify(room));
+export async function listRooms(): Promise<Room[]> {
+  const rooms = await listStoredRooms();
+  const result: Room[] = [];
+  for (const room of rooms) result.push(needsTick(room) ? await tickRoom(room.code) : room);
+  return result;
 }
 
-export function getRoom(code: string): Room | null {
-  const normalized = code.trim().toUpperCase();
-  tickRoom(normalized);
-  return row(normalized);
-}
-
-export function listRooms(): Room[] {
-  tickAllRooms();
-  return (db().prepare('SELECT body FROM rooms ORDER BY rowid DESC').all() as { body: string }[]).map((record) => JSON.parse(record.body) as Room);
-}
-
-function freshCode(): string {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const code = Array.from(randomBytes(6), (byte) => alphabet[byte % alphabet.length]).join('');
-    if (!row(code)) return code;
-  }
-  throw new Error('Không tạo được mã phòng. Vui lòng thử lại.');
-}
-
-export function createRoom(title: string, practiceReuse: boolean): Room {
+export async function createRoom(title: string, practiceReuse: boolean): Promise<Room> {
   if (!adminConfigured()) throw new Error('Hãy cấu hình ADMIN_PASSWORD trước khi tạo giải đấu.');
   const clean = title.trim();
   if (clean.length < 3 || clean.length > 80) throw new Error('Tên giải đấu cần từ 3 đến 80 ký tự.');
-  const code = freshCode();
-  const room: Room = {
-    code, title: clean, createdAt: Date.now(), joinLocked: false, practiceReuse,
-    teams: [], matches: [], sets: [sampleSet], events: [], revision: 1,
-    displayTokenHash: hash(displayToken(code)), processedCommands: []
-  };
-  write(room);
-  return room;
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const code = Array.from(randomBytes(6), (byte) => alphabet[byte % alphabet.length]).join('');
+    const room: Room = {
+      code, title: clean, createdAt: Date.now(), joinLocked: false, practiceReuse,
+      teams: [], matches: [], sets: [sampleSet], events: [], revision: 1,
+      displayTokenHash: hash(displayToken(code)), processedCommands: []
+    };
+    if (await insertStoredRoom(room)) return room;
+  }
+  throw new Error('Không tạo được mã phòng. Vui lòng thử lại.');
 }
 
 export function roomTeamFromToken(room: Room, token: string | undefined): Team | null {
@@ -113,11 +76,11 @@ export function roomTeamFromToken(room: Room, token: string | undefined): Team |
   return room.teams.find((team) => equal(team.tokenHash, tokenHash)) ?? null;
 }
 
-export function joinRoom(code: string, name: string): { room: Room; team: Team; token: string } {
+export async function joinRoom(code: string, name: string): Promise<{ room: Room; team: Team; token: string }> {
   const cleanName = name.trim().replace(/\s+/g, ' ');
   if (cleanName.length < 2 || cleanName.length > 36) throw new Error('Tên đội cần từ 2 đến 36 ký tự.');
   const token = randomBytes(32).toString('hex');
-  const team = mutateRoom(code, (room) => {
+  const team = await mutateRoom(code, (room) => {
     if (room.joinLocked) throw new Error('Phòng đã khóa nhận đội mới.');
     if (room.teams.some((item) => item.name.normalize('NFC').toLocaleLowerCase('vi') === cleanName.normalize('NFC').toLocaleLowerCase('vi') && item.status !== 'rejected')) throw new Error('Tên đội đã được sử dụng.');
     if (room.teams.filter((item) => item.status === 'approved').length >= 4) throw new Error('Phòng đã đủ bốn đội.');
@@ -126,31 +89,20 @@ export function joinRoom(code: string, name: string): { room: Room; team: Team; 
     room.events.push({ id: randomUUID(), at: Date.now(), turn: 0, type: 'join', text: `${cleanName} gửi yêu cầu tham gia.`, teamId: item.id });
     return item;
   });
-  const room = getRoom(code)!;
+  const room = (await getRoom(code))!;
   return { room, team, token };
 }
 
-function mutateRoom<T>(code: string, action: (room: Room) => T, commandId?: string, expectedRevision?: number): T {
-  const store = db();
-  store.exec('BEGIN IMMEDIATE');
-  try {
-    const room = row(code.trim().toUpperCase());
-    if (!room) throw new Error('Không tìm thấy phòng thi.');
-    if (commandId && room.processedCommands.includes(commandId)) {
-      store.exec('COMMIT');
-      return undefined as T;
-    }
+async function mutateRoom<T>(code: string, action: (room: Room) => T, commandId?: string, expectedRevision?: number): Promise<T> {
+  const result = await updateStoredRoom(code, (room) => {
+    if (commandId && room.processedCommands.includes(commandId)) return { value: undefined as T, changed: false };
     if (expectedRevision !== undefined && room.revision !== expectedRevision) throw new Error('Dữ liệu trận đã thay đổi. Vui lòng đồng bộ và thử lại.');
-    const result = action(room);
+    const value = action(room);
     room.revision++;
     if (commandId) room.processedCommands = [...room.processedCommands, commandId].slice(-300);
-    write(room);
-    store.exec('COMMIT');
-    return result;
-  } catch (error) {
-    store.exec('ROLLBACK');
-    throw error;
-  }
+    return { value, changed: true };
+  });
+  return result.value;
 }
 
 function finishMatchInRoom(room: Room, match: Match, at: number): void {
@@ -170,23 +122,25 @@ function finishMatchInRoom(room: Room, match: Match, at: number): void {
   }
 }
 
-function tickRoom(code: string): void {
-  const current = row(code);
-  if (!current?.matches.some((match) => match.status === 'active' && match.game && !match.game.paused && match.game.phaseDeadline !== null && match.game.phaseDeadline <= Date.now())) return;
-  mutateRoom(code, (room) => {
+function needsTick(room: Room, at = Date.now()): boolean {
+  return room.matches.some((match) => match.status === 'active' && match.game && !match.game.paused && match.game.phaseDeadline !== null && match.game.phaseDeadline <= at);
+}
+
+async function tickRoom(code: string): Promise<Room> {
+  const result = await updateStoredRoom(code, (room) => {
     const at = Date.now();
+    if (!needsTick(room, at)) return { value: undefined, changed: false };
     for (const match of room.matches) {
-      if (match.status === 'active' && match.game?.phaseDeadline !== null && !match.game?.paused) {
-        match.game = advanceGame(match.game!, questionSetFor(room, match), at);
+      if (match.status === 'active' && match.game && !match.game.paused && match.game.phaseDeadline !== null && match.game.phaseDeadline <= at) {
+        // advanceGame catches up using stored deadlines, even after an idle function.
+        match.game = advanceGame(match.game, questionSetFor(room, match), at);
         finishMatchInRoom(room, match, at);
       }
     }
+    room.revision++;
+    return { value: undefined, changed: true };
   });
-}
-
-function tickAllRooms(): void {
-  const codes = (db().prepare('SELECT code FROM rooms').all() as { code: string }[]).map((item) => item.code);
-  for (const code of codes) tickRoom(code);
+  return result.room;
 }
 
 export function questionSetFor(room: Room, match: Match): QuestionSet {
@@ -211,16 +165,16 @@ export type RoomCommand =
   | { type: 'assign-set'; matchId: string; setId: string }
   | { type: 'game'; matchId: string; action: GameCommand; expected?: { turn: number; phase: GameState['phase'] } };
 
-export function commandRoom(code: string, viewer: Viewer, command: RoomCommand, commandId: string, expectedRevision: number): Room {
+export async function commandRoom(code: string, viewer: Viewer, command: RoomCommand, commandId: string, expectedRevision: number): Promise<Room> {
   if (!/^[\w-]{8,100}$/.test(commandId)) throw new Error('Thiếu mã thao tác hợp lệ.');
-  const current = getRoom(code);
+  const current = await getRoom(code);
   if (!current) throw new Error('Không tìm thấy phòng thi.');
   if (current.processedCommands.includes(commandId)) return current;
   // Game actions are checked against their own match (turn + phase) so two concurrent
   // matches, and the timer ticks they cause, do not invalidate each other's clicks.
   // "ready" carries the desired state, so it is safe to apply on any revision.
   const roomScoped = command.type !== 'game' && command.type !== 'ready';
-  mutateRoom(code, (room) => {
+  await mutateRoom(code, (room) => {
     const at = Date.now();
     switch (command.type) {
       case 'approve': case 'reject': {
@@ -310,21 +264,19 @@ export function commandRoom(code: string, viewer: Viewer, command: RoomCommand, 
       }
     }
   }, commandId, roomScoped ? expectedRevision : undefined);
-  return getRoom(code)!;
+  return (await getRoom(code))!;
 }
 
-export function touchTeam(code: string, teamId: string): void {
-  const room = row(code);
-  const team = room?.teams.find((item) => item.id === teamId);
-  if (!room || !team || Date.now() - team.lastSeen < 5000) return;
-  const store = db();
-  store.exec('BEGIN IMMEDIATE');
-  try {
-    const fresh = row(code);
-    const actual = fresh?.teams.find((item) => item.id === teamId);
-    if (fresh && actual) { actual.lastSeen = Date.now(); write(fresh); }
-    store.exec('COMMIT');
-  } catch (error) { store.exec('ROLLBACK'); throw error; }
+export async function touchTeam(room: Room, teamId: string): Promise<Room> {
+  const team = room.teams.find((item) => item.id === teamId);
+  if (!team || Date.now() - team.lastSeen < 5000) return room;
+  const result = await updateStoredRoom(room.code, (fresh) => {
+    const actual = fresh.teams.find((item) => item.id === teamId);
+    if (!actual || Date.now() - actual.lastSeen < 5000) return { value: undefined, changed: false };
+    actual.lastSeen = Date.now();
+    return { value: undefined, changed: true };
+  });
+  return result.room;
 }
 
 function answerToken(matchId: string, internalId: string): string {

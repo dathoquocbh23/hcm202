@@ -7,11 +7,11 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   try {
     const { code } = await params;
-    const room = getRoom(code);
+    const room = await getRoom(code);
     if (!room) return fail(new Error('Không tìm thấy phòng thi.'), 404);
     const viewer = viewerFor(request, room);
     if (!viewer) return fail(new Error('Cần tham gia phòng hoặc đăng nhập Admin.'), 401);
-    if (viewer.role === 'team') touchTeam(room.code, viewer.teamId);
-    return json(projectRoom(getRoom(room.code)!, viewer));
+    const current = viewer.role === 'team' ? await touchTeam(room, viewer.teamId) : room;
+    return json(projectRoom(current, viewer));
   } catch (error) { return fail(error, 500); }
 }
