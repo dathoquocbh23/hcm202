@@ -26,7 +26,7 @@ export function RoomDashboard({ code }: { code: string }) {
   const myActiveMatch = room?.matches.find((match) => match.status === 'active' && match.teamIds?.includes(myId ?? ''));
 
   useEffect(() => {
-    if (myId && myActiveMatch) router.push(`/rooms/${code}/match/${myActiveMatch.id}`);
+    if (myId && myActiveMatch) router.push(`/rooms/${code}/match/${myActiveMatch.id}${window.location.search}`);
   }, [myId, myActiveMatch?.id, code, router]);
 
   async function run(command: RoomCommand) {

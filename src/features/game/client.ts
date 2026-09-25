@@ -75,11 +75,21 @@ export function useRoom(code: string, display?: string) {
   }, [url]);
 
   useEffect(() => {
-    void refresh();
-    const poll = setInterval(() => { void refresh(); }, 1200);
+    let stopped = false;
+    let poll: ReturnType<typeof setInterval> | undefined;
+    // A saved team link (?team=…) restores the team cookie before polling starts.
+    const team = display ? null : new URLSearchParams(window.location.search).get('team');
+    const resume = team
+      ? fetch(`/api/rooms/${encodeURIComponent(code)}/resume`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: team }) }).catch(() => undefined)
+      : Promise.resolve();
+    void resume.then(() => {
+      if (stopped) return;
+      void refresh();
+      poll = setInterval(() => { void refresh(); }, 1200);
+    });
     const clock = setInterval(() => setNow(Date.now()), 250);
-    return () => { clearInterval(poll); clearInterval(clock); };
-  }, [refresh]);
+    return () => { stopped = true; clearInterval(poll); clearInterval(clock); };
+  }, [refresh, code, display]);
 
   const send = useCallback(async (command: RoomCommand) => {
     const current = roomRef.current;
