@@ -17,16 +17,21 @@ interface Choice { id: string; label: string }
 export function ActionFocus({ room, game, teamId, now, busy, onAction, onMinimize, demo = false }: Props) {
   const [selected, setSelected] = useState('');
   const [selectedSkill, setSelectedSkill] = useState('');
+  // The clock stops on screen the moment an answer is sent; the server honours the click time.
+  const [frozenClock, setFrozenClock] = useState<number | null>(null);
   const phase = game.phase;
   const own = game.private!;
-  const clock = remainingSeconds(game, now);
+  const clock = frozenClock ?? remainingSeconds(game, now);
   const attacker = teamId === game.attackerId;
   const eligibleSkills = useMemo(() => own.hand.filter((card) => card.available && (phase === 'attack-skill' ? card.category === 'attack' && !(card.kind === 'confusion' && game.activeQuestion?.kind === 'abc') : phase === 'defense-skill' || phase === 'answer' ? card.category === 'defense' : phase === 'reaction' || phase === 'steal-cancel' ? card.kind === 'nullify' : phase === 'reward' ? card.kind === 'steal' : true)), [own.hand, phase, game.activeQuestion?.kind]);
-  useEffect(() => { setSelected(''); setSelectedSkill(''); }, [phase, game.activeQuestion?.id]);
+  useEffect(() => { setSelected(''); setSelectedSkill(''); setFrozenClock(null); }, [phase, game.activeQuestion?.id]);
   // Playing a defense card mid-answer keeps the answer the team already picked.
   useEffect(() => { setSelectedSkill(''); }, [game.defenseSkill?.id]);
 
-  async function submit(command: GameCommand) { await onAction(command); }
+  async function submit(command: GameCommand) {
+    if (command.type === 'answer') setFrozenClock(remainingSeconds(game, now));
+    try { await onAction(command); } finally { setFrozenClock(null); }
+  }
 
   let heading = phaseLabel(phase);
   let instruction = '';
@@ -78,7 +83,7 @@ export function ActionFocus({ room, game, teamId, now, busy, onAction, onMinimiz
   const toggle = (id: string) => setSelected((current) => current === id ? '' : id);
   const actionButton = (label: string, command: GameCommand, disabled = false, secondary = false) => <button className={`button ${secondary ? 'outline' : 'primary'}`} disabled={busy || disabled} onClick={() => void submit(command)}>{busy ? 'Đang xác nhận…' : label}</button>;
   const selectionBar = (placeholder: string) => <div className={`focus-selection ${selectedLabel ? 'has-pick' : ''}`} aria-live="polite">{selectedLabel ? <><small>ĐÃ CHỌN</small><strong>{selectedLabel}</strong></> : <span>{placeholder}</span>}</div>;
-  const urgent = !demo && clock !== null && clock <= 5 && !game.paused;
+  const urgent = !demo && clock !== null && clock <= 5 && !game.paused && frozenClock === null;
 
   return <section className={`focus-screen phase-${phase}`} aria-label="Bảng thao tác riêng của đội"><div className="focus-header"><div><span className="eyebrow">LƯỢT CỦA {teamName(room, teamId).toUpperCase()} · {attacker ? 'ĐỘI CÔNG' : 'ĐỘI THỦ'}</span><h1>{heading}</h1><p>{instruction}</p></div><div className={`focus-clock ${urgent ? 'urgent' : ''}`} role="timer"><strong>{demo ? '∞' : clock ?? '—'}</strong><small>{demo ? 'XEM THỬ · KHÔNG ĐẾM GIỜ' : 'GIÂY CÒN LẠI'}</small></div></div><div className="focus-privacy">⌑ Bảng chọn riêng của đội bạn. Bàn học vẫn ở phía sau; đối thủ và Admin chỉ thấy diễn biến công khai.</div>
     {phase === 'question' && <><div className={`card-hand questions ${selected ? 'has-selection' : ''}`}>{own.candidates.map((candidate, index) => <QuestionCardFace key={candidate.id} question={candidate} selected={selected === candidate.id} onSelect={() => toggle(candidate.id)} keyHint={keyFor(candidate.id)} style={fanStyle(index, own.candidates.length)} />)}</div><div className="focus-actions">{selectionBar('Chạm vào một thẻ câu hỏi')}{actionButton('Đánh câu hỏi này →', { type: 'choose-question', questionId: selected }, !selected)}</div></>}

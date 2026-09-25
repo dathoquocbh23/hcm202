@@ -139,7 +139,8 @@ export type GameCommand =
   | { type: 'choose-question'; questionId: string }
   | { type: 'play-skill'; cardId: string }
   | { type: 'pass' }
-  | { type: 'answer'; answerId: string }
+  /** `at`: when the player clicked, in server time; lets a slow request still count. */
+  | { type: 'answer'; answerId: string; at?: number }
   | { type: 'nullify'; targetCardId: string }
   | { type: 'steal' }
   | { type: 'discard'; cardId: string }

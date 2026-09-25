@@ -1,6 +1,6 @@
 import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { insertStoredRoom, listStoredRooms, readStoredRoom, updateStoredRoom } from './room-repository.ts';
-import { advanceGame, actGame, createGame } from '../../features/game/engine.ts';
+import { advanceGame, actGame, createGame, timeoutAt } from '../../features/game/engine.ts';
 import sampleJson from '../../features/game/data/sample-set.json' with { type: 'json' };
 import set2Json from '../../features/game/data/set-2-ban-ket-b.json' with { type: 'json' };
 import set3Json from '../../features/game/data/set-3-chung-ket.json' with { type: 'json' };
@@ -127,7 +127,7 @@ function finishMatchInRoom(room: Room, match: Match, at: number): void {
 }
 
 function needsTick(room: Room, at = Date.now()): boolean {
-  return room.matches.some((match) => match.status === 'active' && match.game && !match.game.paused && match.game.phaseDeadline !== null && match.game.phaseDeadline <= at);
+  return room.matches.some((match) => match.status === 'active' && match.game && !match.game.paused && (timeoutAt(match.game) ?? Infinity) <= at);
 }
 
 async function tickRoom(code: string): Promise<Room> {
@@ -135,7 +135,7 @@ async function tickRoom(code: string): Promise<Room> {
     const at = Date.now();
     if (!needsTick(room, at)) return { value: undefined, changed: false };
     for (const match of room.matches) {
-      if (match.status === 'active' && match.game && !match.game.paused && match.game.phaseDeadline !== null && match.game.phaseDeadline <= at) {
+      if (match.status === 'active' && match.game && !match.game.paused && (timeoutAt(match.game) ?? Infinity) <= at) {
         // advanceGame catches up using stored deadlines, even after an idle function.
         match.game = advanceGame(match.game, questionSetFor(room, match), at);
         finishMatchInRoom(room, match, at);

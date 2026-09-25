@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test, { afterEach, beforeEach, type TestContext } from 'node:test';
 import { commandRoom, createRoom, getRoom, joinRoom, listRooms, projectRoom, touchTeam } from '../src/lib/server/room-store.ts';
 import { supabaseRequest } from '../src/lib/server/supabase-rest.ts';
-import { createGame } from '../src/features/game/engine.ts';
+import { ANSWER_LATENCY_MS, createGame } from '../src/features/game/engine.ts';
 import type { Room } from '../src/features/game/types.ts';
 
 const envNames = ['SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SECRET_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'ADMIN_PASSWORD'] as const;
@@ -227,7 +227,7 @@ test('finished semifinals fill the final, which starts only after the invitation
     const game = createGame(room.sets[0], ids, Date.now() - 60_000);
     game.phase = 'answer';
     game.activeQuestionId = game.candidates[0];
-    game.phaseDeadline = Date.now() - 1;
+    game.phaseDeadline = Date.now() - ANSWER_LATENCY_MS - 1;
     game.hp[game.defenderId] = 60;
     return game;
   };

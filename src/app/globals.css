@@ -232,6 +232,17 @@ textarea { resize:vertical; }
 .desk-last-answer { margin-top:12px; padding:9px 12px; border-left:4px solid var(--red); border-radius:6px; background:#f6e3e0; }
 .desk-last-answer.correct { border-left-color:var(--team-green); background:var(--green-soft); }
 .desk-last-answer p { margin:4px 0 0; font-size:14px; }
+.question-arrival { position:absolute; inset:0; z-index:40; display:grid; place-items:center; padding:16px; pointer-events:none; animation:qa-dim 3.2s ease both; }
+.question-arrival-card { width:min(620px,92%); padding:24px 26px; border:2px solid var(--gold); border-radius:16px; background:#fffaf0; box-shadow:0 24px 60px #152e2690; text-align:center; animation:qa-card 3.2s cubic-bezier(.2,.8,.3,1) both; }
+.question-arrival-card small { color:var(--green); font-size:12px; font-weight:800; letter-spacing:1.4px; }
+.question-arrival-card p { margin:12px 0 0; font:600 clamp(18px,2.4vw,26px)/1.45 var(--serif); }
+.question-arrival-options { display:grid; gap:6px; margin-top:14px; text-align:left; font-size:15px; }
+.question-arrival-options span { padding:7px 11px; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
+.question-arrival-options b { color:var(--green); }
+.desk-detail p.q-landing { border-radius:6px; animation:q-landing 3.2s ease both; }
+@keyframes qa-dim { 0% { background:#1c382c00; } 10%,70% { background:#1c382c59; } 100% { background:#1c382c00; } }
+@keyframes qa-card { 0% { opacity:0; transform:scale(.6) rotate(-4deg); } 12% { opacity:1; transform:scale(1.04); } 18% { transform:scale(1); } 72% { opacity:1; transform:translateY(0) scale(1); } 100% { opacity:0; transform:translateY(clamp(220px,38vh,360px)) scale(.35); } }
+@keyframes q-landing { 0%,70% { opacity:.25; background:transparent; } 78% { opacity:1; background:#f3d58f; } 100% { opacity:1; background:transparent; } }
 .desk-detail-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex:none; }
 .game-timeline { display:flex; justify-content:center; gap:23px; padding:12px; border-top:1px solid var(--line); color:var(--muted); font-size:10px; font-weight:700; letter-spacing:.5px; }
 .match-events { margin:20px 24px 50px; padding:18px 20px; border:1px solid var(--line); background:var(--surface); border-radius:12px; font-size:12px; }

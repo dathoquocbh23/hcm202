@@ -17,6 +17,8 @@ const PHASE_MS = {
 
 /** Skill and Vô Hiệu animations cover the answer screen; the defender gets this time back. */
 const FX_GRACE_MS = 3_000;
+/** A submitted answer may take this long to reach the server; clicks made before the deadline still count. */
+export const ANSWER_LATENCY_MS = 3_000;
 /** Fill-in questions show the correct card plus this many minus one wrong cards. */
 const FILL_CHOICES = 6;
 
@@ -44,6 +46,12 @@ function record(game: GameState, entry: Omit<AnswerRecord, 'turn' | 'questionId'
   const skills = [game.attackSkill, game.defenseSkill].filter((card): card is SkillCard => Boolean(card))
     .map((card) => ({ kind: card.kind, cancelled: card.id === game.cancelledSkillId }));
   (game.answerLog ??= []).push({ turn: game.turn, questionId: game.activeQuestionId ?? '', skills: entry.sudden ? [] : skills, ...entry });
+}
+
+/** When the current phase really times out: answer phases wait out the network grace first. */
+export function timeoutAt(game: GameState): number | null {
+  if (game.phaseDeadline === null) return null;
+  return game.phase === 'answer' || game.phase === 'second-answer' ? game.phaseDeadline + ANSWER_LATENCY_MS : game.phaseDeadline;
 }
 
 function setPhase(game: GameState, phase: GamePhase, at: number, durationMs?: number): void {
@@ -323,8 +331,8 @@ export function advanceGame(source: GameState, set: QuestionSet, now: number): G
   const game: GameState = structuredClone(source);
   if (game.paused || game.phase === 'completed') return game;
   let cycles = 0;
-  while (game.phaseDeadline !== null && game.phaseDeadline <= now && cycles++ < 100) {
-    const at = game.phaseDeadline;
+  while ((timeoutAt(game) ?? Infinity) <= now && cycles++ < 100) {
+    const at = timeoutAt(game)!;
     spendActiveTime(game, at);
     switch (game.phase) {
       case 'question': chooseQuestion(game, set, game.candidates[0], at); break;
@@ -444,6 +452,9 @@ export function actGame(source: GameState, set: QuestionSet, actorId: string | '
       if (game.phase === 'sudden') suddenAnswer(game, set, actorId, command.answerId, now);
       else {
         if (!defense || !['answer', 'second-answer'].includes(game.phase)) throw new Error('Chưa tới lượt đội trả lời.');
+        // Trust the click time only within the latency grace, never beyond the server's clock.
+        const clickedAt = Math.min(now, Math.max(Number.isFinite(command.at) ? command.at! : now, now - ANSWER_LATENCY_MS));
+        if (clickedAt > (game.phaseDeadline ?? now)) throw new Error('Đã hết giờ trả lời.');
         answer(game, set, command.answerId, now);
       }
       break;

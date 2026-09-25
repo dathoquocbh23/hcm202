@@ -1,8 +1,8 @@
 'use client';
 
-import type { CSSProperties } from 'react';
-import { phaseLabel, remainingSeconds, teamName, type PublicGame, type RoomView } from '../client';
-import { CardIcon } from './game-cards';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { phaseLabel, remainingSeconds, teamName, type PublicGame, type PublicQuestion, type RoomView } from '../client';
+import { CardIcon, QuestionText } from './game-cards';
 import { MatchFxLayer, useMatchFx, useTweenedNumber, type Fx } from './match-effects';
 
 interface Props {
@@ -30,6 +30,30 @@ function Hud({ place, name, attacking, hp, color, hits }: { place: 'far' | 'near
   </div>;
 }
 
+/** Keep in step with the question-arrival animations in globals.css. */
+const ARRIVAL_MS = 3200;
+
+/**
+ * A newly played question pops up large in the middle of the table, then slides down to the
+ * question panel, so spectators see exactly when it changes. Opening the page never replays it.
+ */
+function useQuestionArrival(game: PublicGame, enabled: boolean) {
+  const [arrival, setArrival] = useState<{ key: string; question: PublicQuestion } | null>(null);
+  const seen = useRef<string | null | undefined>(undefined);
+  const key = game.activeQuestion ? `${game.turn}:${game.activeQuestion.id}` : null;
+  useEffect(() => {
+    const first = seen.current === undefined;
+    seen.current = key;
+    if (!first && enabled && key && game.activeQuestion) setArrival({ key, question: game.activeQuestion });
+  }, [key, enabled]); // Only a new turn/question should trigger it, not a fresh copy of the same one.
+  useEffect(() => {
+    if (!arrival) return;
+    const timer = setTimeout(() => setArrival(null), ARRIVAL_MS);
+    return () => clearTimeout(timer);
+  }, [arrival]);
+  return arrival;
+}
+
 export function DeskOverview({ room, game, teamIds, ownId, spectator, now, onContinue, fxFixed = false, compact = false }: Props) {
   const bottomId = ownId && teamIds.includes(ownId) ? ownId : teamIds[1];
   const topId = teamIds.find((id) => id !== bottomId) ?? teamIds[0];
@@ -48,6 +72,7 @@ export function DeskOverview({ room, game, teamIds, ownId, spectator, now, onCon
   const topTeam = room.teams.find((team) => team.id === topId);
   const nameOf = (id?: string | null) => teamName(room, id);
   const fx = useMatchFx(game.events, teamIds, nameOf);
+  const arrival = useQuestionArrival(game, spectator);
   const hitsOn = (id: string) => fx.filter((item): item is Extract<Fx, { kind: 'result' }> => item.kind === 'result' && item.defenderId === id && item.damage > 0);
   const shake = fx.find((item) => item.kind === 'result' && item.outcome !== 'correct');
 
@@ -64,10 +89,11 @@ export function DeskOverview({ room, game, teamIds, ownId, spectator, now, onCon
         </div><div className="table-deck back-card">✦<small>{game.questionDeckCount} thẻ</small></div><div className="table-discard">⌑<small>{game.skillDiscardCount} đã dùng</small></div></div>
       <Hud place="near" name={nameOf(bottomId)} attacking={game.attackerId === bottomId} hp={game.hp[bottomId]} color={bottomTeam?.color ?? 'blue'} hits={hitsOn(bottomId)} />
       <div className="desk-hand near-hand">{spectator || !game.private ? Array.from({ length: game.handCounts[bottomId] }, (_, index) => <div className="back-card" key={index}>✦</div>) : game.private.hand.map((card) => <div className={`hand-paper cat-${card.category}`} key={card.id}><small>{card.category === 'attack' ? 'CÔNG' : card.category === 'reaction' ? 'PHẢN ĐÒN' : 'THỦ'}</small><span className="hand-paper-emblem"><CardIcon name={card.kind} size={18} /></span><strong>{card.name}</strong></div>)}</div>
+      {arrival && <div className="question-arrival" key={arrival.key} aria-hidden="true"><div className="question-arrival-card"><small>📜 CÂU HỎI MỚI · {arrival.question.id} · {arrival.question.kind === 'abc' ? 'TRẮC NGHIỆM ABC' : 'ĐIỀN KHUYẾT'}</small><p><QuestionText text={arrival.question.text} /></p>{arrival.question.kind === 'abc' && arrival.question.options && <div className="question-arrival-options">{(['A', 'B', 'C'] as const).map((letter) => <span key={letter}><b>{letter}</b> {arrival.question.options![letter]}</span>)}</div>}</div></div>}
       {!fxFixed && <MatchFxLayer fx={fx} teamName={nameOf} sideOf={(id) => id === topId ? 'top' : 'bottom'} />}
       <div className="desk-scene-note">{game.phase === 'completed' ? `Chiến thắng: ${teamName(room, game.winnerId)}` : `Đang chờ ${activeName} · ${phaseLabel(game.phase)}`}</div>
     </div>
-    <div className="desk-detail"><div><span className="eyebrow">CÂU HỎI ĐANG ĐÁNH{game.activeQuestion ? ` · ${game.activeQuestion.kind === 'abc' ? 'TRẮC NGHIỆM ABC' : 'ĐIỀN KHUYẾT'}` : ''}</span><p>{game.activeQuestion?.text ?? 'Đội tấn công đang chọn câu hỏi. Câu chưa được công khai.'}</p>{game.activeQuestion?.hint && <small>Gợi ý: {game.activeQuestion.hint}</small>}{choices.length > 0 && <div className={`desk-choices ${game.activeQuestion?.kind === 'abc' ? 'abc' : ''}`}>{choices.map((choice) => <span key={choice.id} className={choice.state}>{choice.label}</span>)}</div>}{last && <div className={`desk-last-answer ${last.outcome}`}><span className="eyebrow">ĐỘI THỦ ĐÃ CHỐT · LƯỢT {last.turn} · {last.questionId}</span><p><strong>{teamName(room, last.teamId)}</strong> {last.known ? last.submitted ? <>chọn <b>{last.submitted}</b></> : 'không chọn (hết giờ)' : ''} → <b>{last.outcome === 'correct' ? 'Đúng' : last.outcome === 'wrong' ? 'Sai' : 'Hết giờ'}</b>{last.outcome !== 'correct' && <> · Đáp án đúng: {last.correctAnswer}</>}{last.damage > 0 && ` · −${last.damage} HP`}</p></div>}</div><div className="desk-detail-actions">{onContinue && game.private?.canAct && <button className="button primary" onClick={onContinue}>Tiếp tục lượt của bạn →</button>}<span className="status-pill">Lượt {game.turn} · {phaseLabel(game.phase)}</span></div></div>
+    <div className="desk-detail"><div><span className="eyebrow">CÂU HỎI ĐANG ĐÁNH{game.activeQuestion ? ` · ${game.activeQuestion.kind === 'abc' ? 'TRẮC NGHIỆM ABC' : 'ĐIỀN KHUYẾT'}` : ''}</span><p key={arrival?.key ?? 'settled'} className={arrival ? 'q-landing' : undefined}>{game.activeQuestion?.text ?? 'Đội tấn công đang chọn câu hỏi. Câu chưa được công khai.'}</p>{game.activeQuestion?.hint && <small>Gợi ý: {game.activeQuestion.hint}</small>}{choices.length > 0 && <div className={`desk-choices ${game.activeQuestion?.kind === 'abc' ? 'abc' : ''}`}>{choices.map((choice) => <span key={choice.id} className={choice.state}>{choice.label}</span>)}</div>}{last && <div className={`desk-last-answer ${last.outcome}`}><span className="eyebrow">ĐỘI THỦ ĐÃ CHỐT · LƯỢT {last.turn} · {last.questionId}</span><p><strong>{teamName(room, last.teamId)}</strong> {last.known ? last.submitted ? <>chọn <b>{last.submitted}</b></> : 'không chọn (hết giờ)' : ''} → <b>{last.outcome === 'correct' ? 'Đúng' : last.outcome === 'wrong' ? 'Sai' : 'Hết giờ'}</b>{last.outcome !== 'correct' && <> · Đáp án đúng: {last.correctAnswer}</>}{last.damage > 0 && ` · −${last.damage} HP`}</p></div>}</div><div className="desk-detail-actions">{onContinue && game.private?.canAct && <button className="button primary" onClick={onContinue}>Tiếp tục lượt của bạn →</button>}<span className="status-pill">Lượt {game.turn} · {phaseLabel(game.phase)}</span></div></div>
     {!compact && <div className="game-timeline"><span>CHỌN CÂU</span><span>KỸ NĂNG</span><span>PHẢN ĐÒN</span><span>TRẢ LỜI</span><span>KẾT QUẢ</span></div>}
     {fxFixed && <MatchFxLayer fixed fx={fx} teamName={nameOf} sideOf={(id) => id === topId ? 'top' : 'bottom'} />}
   </div>;

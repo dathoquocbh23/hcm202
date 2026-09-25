@@ -130,8 +130,9 @@ export function useRoom(code: string, display?: string) {
     // Pin team actions to the turn/phase the player saw, so a click never lands on a later phase.
     const game = roomRef.current?.matches.find((match) => match.id === matchId)?.game;
     const expected = game && action.type !== 'pause' && action.type !== 'resume' ? { turn: game.turn, phase: game.phase } : undefined;
-    return send({ type: 'game', matchId, action, expected });
-  }, [send]);
+    const stamped = action.type === 'answer' ? { ...action, at: Date.now() + serverOffset } : action;
+    return send({ type: 'game', matchId, action: stamped, expected });
+  }, [send, serverOffset]);
   return { room, error, busy, now: now + serverOffset, refresh, send, gameAction };
 }
 

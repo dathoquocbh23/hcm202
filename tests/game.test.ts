@@ -3,7 +3,7 @@ import test from 'node:test';
 import sampleJson from '../src/features/game/data/sample-set.json' with { type: 'json' };
 import set2Json from '../src/features/game/data/set-2-ban-ket-b.json' with { type: 'json' };
 import set3Json from '../src/features/game/data/set-3-chung-ket.json' with { type: 'json' };
-import { actGame, advanceGame, createGame } from '../src/features/game/engine.ts';
+import { ANSWER_LATENCY_MS, actGame, advanceGame, createGame } from '../src/features/game/engine.ts';
 import { validateQuestionSet } from '../src/features/game/validate-set.ts';
 import type { GameState, Question, QuestionSet } from '../src/features/game/types.ts';
 
@@ -55,7 +55,7 @@ test('a wrong answer causes 60 damage and timeout follows the same rule', () => 
     const question = selected(initial);
     const answering = openAnswer(initial, question, startAt);
     const result = timeout
-      ? advanceGame(answering, set, answering.phaseDeadline! + 1)
+      ? advanceGame(answering, set, answering.phaseDeadline! + ANSWER_LATENCY_MS + 1)
       : actGame(answering, set, answering.defenderId, { type: 'answer', answerId: wrongOf(question, answering) }, startAt + 500);
     assert.equal(result.answerCorrect, false);
     assert.equal(result.hp[answering.defenderId], 240);
@@ -175,3 +175,27 @@ test('fill-in questions deal six answer cards including the correct one', () => 
   }
   assert.fail('no fill-in question was dealt in 20 games');
 });
+
+test('an answer clicked before the deadline still counts when the request arrives late', () => {
+  const initial = createGame(set, ['alpha', 'beta'], startAt);
+  const question = selected(initial);
+  const answering = openAnswer(initial, question, startAt);
+  const deadline = answering.phaseDeadline!;
+  // Other viewers polling inside the grace must not close the answer as a timeout.
+  assert.equal(advanceGame(answering, set, deadline + ANSWER_LATENCY_MS - 1).phase, 'answer');
+  const late = actGame(answering, set, answering.defenderId, { type: 'answer', answerId: answerOf(question), at: deadline - 500 }, deadline + 2_000);
+  assert.equal(late.answerCorrect, true);
+  assert.equal(late.hp[answering.defenderId], 300);
+});
+
+test('a click after the deadline, or a click time older than the grace, is refused', () => {
+  const initial = createGame(set, ['alpha', 'beta'], startAt);
+  const question = selected(initial);
+  const answering = openAnswer(initial, question, startAt);
+  const deadline = answering.phaseDeadline!;
+  assert.throws(() => actGame(answering, set, answering.defenderId, { type: 'answer', answerId: answerOf(question), at: deadline + 100 }, deadline + 500), /hết giờ/);
+  // A forged early click time is clamped to the grace window, which already lies past the deadline.
+  assert.throws(() => actGame(answering, set, answering.defenderId, { type: 'answer', answerId: answerOf(question), at: startAt }, deadline + ANSWER_LATENCY_MS), /hết giờ|Chưa tới lượt/);
+  assert.equal(advanceGame(answering, set, deadline + ANSWER_LATENCY_MS).answerCorrect, false);
+});
+
