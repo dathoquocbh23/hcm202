@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import sampleJson from '../src/features/game/data/sample-set.json' with { type: 'json' };
+import set2Json from '../src/features/game/data/set-2-ban-ket-b.json' with { type: 'json' };
+import set3Json from '../src/features/game/data/set-3-chung-ket.json' with { type: 'json' };
 import { actGame, advanceGame, createGame } from '../src/features/game/engine.ts';
 import { validateQuestionSet } from '../src/features/game/validate-set.ts';
 import type { GameState, Question, QuestionSet } from '../src/features/game/types.ts';
@@ -15,17 +17,17 @@ function selected(game: GameState): Question {
 }
 
 function answerOf(question: Question): string { return question.kind === 'fill' ? question.answerId : question.correctOption; }
-function wrongOf(question: Question): string {
+function wrongOf(question: Question, game: GameState): string {
   if (question.kind === 'abc') return (['A', 'B', 'C'] as const).find((id) => id !== question.correctOption)!;
-  return set.answers.find((answer) => answer.id !== question.answerId)!.id;
+  return game.answerBoard.find((id) => id !== question.answerId)!;
 }
 function openAnswer(game: GameState, question: Question, at: number): GameState {
   const chosen = actGame(game, set, game.attackerId, { type: 'choose-question', questionId: question.id }, at + 100);
   return actGame(chosen, set, chosen.attackerId, { type: 'pass' }, at + 200);
 }
 
-test('the supplied question set satisfies the full match format', () => {
-  assert.deepEqual(validateQuestionSet(set).errors, []);
+test('all three built-in question sets satisfy the full match format', () => {
+  for (const builtIn of [set, set2Json, set3Json] as QuestionSet[]) assert.deepEqual(validateQuestionSet(builtIn).errors, [], builtIn.id);
 });
 
 test('a correct answer keeps HP, grants the defender a reward, and changes turns', () => {
@@ -39,7 +41,7 @@ test('a correct answer keeps HP, grants the defender a reward, and changes turns
   assert.equal(revealed.answerCorrect, true);
   assert.equal(revealed.hp[defender], 300);
   assert.equal(revealed.rewardOwnerId, defender);
-  const next = advanceGame(revealed, set, startAt + 2_600);
+  const next = advanceGame(revealed, set, startAt + 10_600);
   assert.equal(next.phase, 'question');
   assert.equal(next.turn, 2);
   assert.equal(next.attackerId, defender);
@@ -54,7 +56,7 @@ test('a wrong answer causes 60 damage and timeout follows the same rule', () => 
     const answering = openAnswer(initial, question, startAt);
     const result = timeout
       ? advanceGame(answering, set, answering.phaseDeadline! + 1)
-      : actGame(answering, set, answering.defenderId, { type: 'answer', answerId: wrongOf(question) }, startAt + 500);
+      : actGame(answering, set, answering.defenderId, { type: 'answer', answerId: wrongOf(question, answering) }, startAt + 500);
     assert.equal(result.answerCorrect, false);
     assert.equal(result.hp[answering.defenderId], 240);
     assert.equal(result.rewardOwnerId, answering.attackerId);
@@ -69,7 +71,7 @@ test('Second Chance preserves the original deadline and a corrected answer costs
   game = openAnswer(game, question, startAt);
   game = actGame(game, set, defender, { type: 'play-skill', cardId: 'second-chance-test' }, startAt + 300);
   const originalDeadline = game.phaseDeadline;
-  game = actGame(game, set, defender, { type: 'answer', answerId: wrongOf(question) }, startAt + 400);
+  game = actGame(game, set, defender, { type: 'answer', answerId: wrongOf(question, game) }, startAt + 400);
   assert.equal(game.phase, 'second-answer');
   assert.equal(game.phaseDeadline, originalDeadline);
   game = actGame(game, set, defender, { type: 'answer', answerId: answerOf(question) }, startAt + 500);
@@ -86,7 +88,7 @@ test('the defender can use Hint or Narrow while reading the answer and gets the 
     const originalDeadline = answering.phaseDeadline;
     const played = actGame(answering, set, answering.defenderId, { type: 'play-skill', cardId: `defense-${kind}` }, startAt + 300);
     assert.equal(played.phase, 'answer');
-    assert.equal(played.phaseDeadline, originalDeadline! + 2_000);
+    assert.equal(played.phaseDeadline, originalDeadline! + 3_000);
     assert.equal(played.defenseSkill?.kind, kind);
     if (kind === 'narrow') {
       assert.equal(played.removedAnswers.length, question.kind === 'abc' ? 1 : 4);
@@ -102,7 +104,7 @@ test('Extra Time adds ten seconds when used during the answer', () => {
   initial.hands[initial.defenderId].push({ id: 'extra-time-test', kind: 'extra-time', acquiredTurn: 0 });
   const answering = openAnswer(initial, question, startAt);
   const played = actGame(answering, set, answering.defenderId, { type: 'play-skill', cardId: 'extra-time-test' }, startAt + 300);
-  assert.equal(played.phaseDeadline, answering.phaseDeadline! + 10_000 + 2_000);
+  assert.equal(played.phaseDeadline, answering.phaseDeadline! + 10_000 + 3_000);
 });
 
 test('an attack skill does not eat into the answer time while its animation plays', () => {
@@ -112,7 +114,7 @@ test('an attack skill does not eat into the answer time while its animation play
   const chosen = actGame(initial, set, initial.attackerId, { type: 'choose-question', questionId: question.id }, startAt + 100);
   const answering = actGame(chosen, set, chosen.attackerId, { type: 'play-skill', cardId: 'rush-test' }, startAt + 200);
   assert.equal(answering.phase, 'answer');
-  assert.equal(answering.phaseDeadline, startAt + 200 + 7_000 + 2_000);
+  assert.equal(answering.phaseDeadline, startAt + 200 + 7_000 + 3_000);
   const plain = createGame(set, ['alpha', 'beta'], startAt);
   const passed = openAnswer(plain, selected(plain), startAt);
   assert.equal(passed.phaseDeadline, startAt + 200 + 15_000);
@@ -130,17 +132,17 @@ test('Nullify can cancel a defender card played during the answer while preservi
   const resumed = actGame(reacted, set, answering.attackerId, { type: 'nullify', targetCardId: 'hint-test' }, startAt + 500);
   assert.equal(resumed.phase, 'answer');
   assert.equal(resumed.cancelledSkillId, 'hint-test');
-  assert.equal(resumed.phaseDeadline, startAt + 500 + reacted.answerRemainingMs! + 2_000);
+  assert.equal(resumed.phaseDeadline, startAt + 500 + reacted.answerRemainingMs! + 3_000);
 });
 
 test('an admin can pause the clock but cannot submit a team answer', () => {
   const initial = createGame(set, ['alpha', 'beta'], startAt);
   const deadline = initial.phaseDeadline!;
-  const paused = actGame(initial, set, 'admin', { type: 'pause' }, startAt + 2_000);
+  const paused = actGame(initial, set, 'admin', { type: 'pause' }, startAt + 3_000);
   assert.equal(paused.paused, true);
   assert.equal(advanceGame(paused, set, deadline + 100_000).phase, 'question');
   const resumed = actGame(paused, set, 'admin', { type: 'resume' }, deadline + 100_000);
-  assert.equal(resumed.phaseDeadline, deadline + 100_000 + (deadline - (startAt + 2_000)));
+  assert.equal(resumed.phaseDeadline, deadline + 100_000 + (deadline - (startAt + 3_000)));
   assert.throws(() => actGame(resumed, set, 'admin', { type: 'choose-question', questionId: resumed.candidates[0] }, deadline + 100_001), /Admin chỉ theo dõi/);
 });
 
@@ -153,9 +155,23 @@ test('answer and skill events carry structured detail for viewer effects', () =>
   const initial = createGame(set, ['alpha', 'beta'], startAt);
   const question = selected(initial);
   const answering = openAnswer(initial, question, startAt);
-  const revealed = actGame(answering, set, answering.defenderId, { type: 'answer', answerId: wrongOf(question) }, startAt + 500);
+  const revealed = actGame(answering, set, answering.defenderId, { type: 'answer', answerId: wrongOf(question, answering) }, startAt + 500);
   const result = revealed.events.findLast((event) => event.type === 'answer-result');
   assert.equal(result?.outcome, 'wrong');
   assert.equal(result?.damage, 60);
   assert.equal(result?.teamId, answering.defenderId);
+});
+
+test('fill-in questions deal six answer cards including the correct one', () => {
+  for (let round = 0; round < 20; round++) {
+    const initial = createGame(set, ['alpha', 'beta'], startAt);
+    const fill = set.questions.find((item) => item.kind === 'fill' && initial.candidates.includes(item.id));
+    if (!fill || fill.kind !== 'fill') continue;
+    const chosen = actGame(initial, set, initial.attackerId, { type: 'choose-question', questionId: fill.id }, startAt + 100);
+    assert.equal(chosen.answerBoard.length, 6);
+    assert.ok(chosen.answerBoard.includes(fill.answerId));
+    assert.equal(new Set(chosen.answerBoard).size, 6);
+    return;
+  }
+  assert.fail('no fill-in question was dealt in 20 games');
 });

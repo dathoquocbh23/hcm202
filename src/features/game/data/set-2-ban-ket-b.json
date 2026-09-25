@@ -1,0 +1,265 @@
+{
+  "id": "hcm-bo-2-ban-ket-b",
+  "title": "Bộ 2 · Bán kết B · Văn kiện, sự kiện, mốc lịch sử",
+  "reviewStatus": "teacher-review-required",
+  "answers": [
+    {
+      "id": "A13",
+      "code": "★13",
+      "text": "Yêu sách của nhân dân An Nam"
+    },
+    {
+      "id": "A14",
+      "code": "★14",
+      "text": "Hội nghị Vécxây"
+    },
+    {
+      "id": "A15",
+      "code": "★15",
+      "text": "Chánh cương vắn tắt của Đảng"
+    },
+    {
+      "id": "A16",
+      "code": "★16",
+      "text": "Tuyên ngôn Nhân quyền và Dân quyền"
+    },
+    {
+      "id": "A17",
+      "code": "★17",
+      "text": "Nam Kỳ tự trị"
+    },
+    {
+      "id": "A18",
+      "code": "★18",
+      "text": "Thư gửi đồng bào Nam Bộ"
+    },
+    {
+      "id": "A19",
+      "code": "★19",
+      "text": "Hiệp định Giơnevơ"
+    },
+    {
+      "id": "A20",
+      "code": "★20",
+      "text": "Cách mạng Tháng Mười Nga"
+    },
+    {
+      "id": "A21",
+      "code": "★21",
+      "text": "Quốc tế thứ ba"
+    },
+    {
+      "id": "A22",
+      "code": "★22",
+      "text": "Đội tiên phong"
+    },
+    {
+      "id": "A23",
+      "code": "★23",
+      "text": "Lời kêu gọi toàn quốc kháng chiến"
+    },
+    {
+      "id": "A24",
+      "code": "★24",
+      "text": "Lực lượng chính trị"
+    }
+  ],
+  "decoys": [
+    {
+      "id": "D201",
+      "text": "Tuyên ngôn Độc lập của Mỹ (1776)"
+    },
+    {
+      "id": "D202",
+      "text": "Hiệp định Pari"
+    },
+    {
+      "id": "D203",
+      "text": "Quốc tế thứ hai"
+    },
+    {
+      "id": "D204",
+      "text": "Lực lượng vũ trang"
+    },
+    {
+      "id": "D205",
+      "text": "Cách mạng Tân Hợi"
+    },
+    {
+      "id": "D206",
+      "text": "Lời kêu gọi thi đua ái quốc"
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q21",
+      "kind": "fill",
+      "text": "Năm 1919, Hồ Chí Minh thay mặt những người Việt Nam yêu nước tại Pháp gửi tới Hội nghị Vécxây bản ______.",
+      "answerId": "A13",
+      "hint": "Bắt đầu bằng “Yêu sách…”"
+    },
+    {
+      "id": "Q22",
+      "kind": "fill",
+      "text": "Bản Yêu sách của nhân dân An Nam được gửi tới ______ (Pháp) năm 1919, nơi các nước thắng trận trong Chiến tranh thế giới thứ nhất họp bàn.",
+      "answerId": "A14",
+      "hint": "Tên một cung điện nổi tiếng gần Paris"
+    },
+    {
+      "id": "Q23",
+      "kind": "fill",
+      "text": "“a) Đánh đổ đế quốc chủ nghĩa Pháp và bọn phong kiến. b) Làm cho nước Nam được hoàn toàn độc lập” là mục tiêu chính trị nêu trong ______ (1930).",
+      "answerId": "A15",
+      "hint": "Văn kiện “vắn tắt” của Đảng"
+    },
+    {
+      "id": "Q24",
+      "kind": "fill",
+      "text": "Câu “Người ta sinh ra tự do và bình đẳng về quyền lợi, và phải luôn luôn được tự do và bình đẳng về quyền lợi” trích từ bản ______ của Cách mạng Pháp năm 1791.",
+      "answerId": "A16",
+      "hint": "Tuyên ngôn… (không phải của Mỹ)"
+    },
+    {
+      "id": "Q25",
+      "kind": "fill",
+      "text": "Sau Cách mạng Tháng Tám, thực dân Pháp lập ra cái gọi là “______” hòng chia cắt đất nước ta một lần nữa.",
+      "answerId": "A17",
+      "hint": "Một “kỳ” ở phía Nam được gắn mác “tự trị”"
+    },
+    {
+      "id": "Q26",
+      "kind": "fill",
+      "text": "“Đồng bào Nam Bộ là dân nước Việt Nam. Sông có thể cạn, núi có thể mòn, song chân lý đó không bao giờ thay đổi” — trích ______ (1946).",
+      "answerId": "A18",
+      "hint": "Một bức thư gửi đồng bào ở miền Nam"
+    },
+    {
+      "id": "Q27",
+      "kind": "fill",
+      "text": "Năm 1954, ______ được ký kết, đất nước Việt Nam tạm thời bị chia cắt làm hai miền.",
+      "answerId": "A19",
+      "hint": "Hiệp định ký tại Thụy Sĩ"
+    },
+    {
+      "id": "Q28",
+      "kind": "fill",
+      "text": "Năm 1917, thắng lợi của ______ đã ảnh hưởng sâu sắc tới Hồ Chí Minh trong việc lựa chọn con đường cứu nước.",
+      "answerId": "A20",
+      "hint": "Một cuộc cách mạng ở nước Nga"
+    },
+    {
+      "id": "Q29",
+      "kind": "fill",
+      "text": "Sau khi đọc Luận cương của Lênin, Hồ Chí Minh viết: “Từ đó tôi hoàn toàn tin theo Lênin, tin theo ______”.",
+      "answerId": "A21",
+      "hint": "Quốc tế thứ mấy? (không phải thứ hai)"
+    },
+    {
+      "id": "Q30",
+      "kind": "fill",
+      "text": "Theo Hồ Chí Minh, Đảng Cộng sản Việt Nam vừa là ______ của giai cấp công nhân, vừa của nhân dân lao động và của dân tộc Việt Nam.",
+      "answerId": "A22",
+      "hint": "Đội… đi đầu"
+    },
+    {
+      "id": "Q31",
+      "kind": "fill",
+      "text": "“Bất kỳ đàn ông, đàn bà, bất kỳ người già, người trẻ, không chia tôn giáo, đảng phái, dân tộc…” là lời hiệu triệu đoàn kết trong ______ (12-1946).",
+      "answerId": "A23",
+      "hint": "Lời kêu gọi… kháng chiến"
+    },
+    {
+      "id": "Q32",
+      "kind": "fill",
+      "text": "“Không! Chúng ta thà hy sinh tất cả, chứ nhất định không chịu mất nước, nhất định không chịu làm nô lệ” — trích ______ (19-12-1946).",
+      "answerId": "A23",
+      "hint": "Cùng đáp án với một câu khác về đoàn kết toàn dân"
+    },
+    {
+      "id": "Q33",
+      "kind": "fill",
+      "text": "Theo Hồ Chí Minh, ______ của quần chúng là cơ sở, nền tảng cho việc xây dựng lực lượng vũ trang.",
+      "answerId": "A24",
+      "hint": "Lực lượng… (không phải vũ trang)"
+    },
+    {
+      "id": "Q34",
+      "kind": "fill",
+      "text": "Trong Cách mạng Tháng Tám 1945, với hình thức khởi nghĩa của quần chúng trong cả nước, nhân dân ta chủ yếu dựa vào ______, kết hợp với lực lượng vũ trang, để giành chính quyền.",
+      "answerId": "A24",
+      "hint": "Cùng đáp án với câu về “cơ sở, nền tảng”"
+    },
+    {
+      "id": "Q35",
+      "kind": "abc",
+      "text": "Nội dung chính của bản Yêu sách của nhân dân An Nam (1919) là gì?",
+      "options": {
+        "A": "Đòi độc lập hoàn toàn cho Việt Nam",
+        "B": "Đòi quyền bình đẳng về mặt pháp lý và các quyền tự do, dân chủ",
+        "C": "Đòi Pháp rút toàn bộ quân khỏi Đông Dương"
+      },
+      "correctOption": "B",
+      "hint": "Mới chỉ là quyền bình đẳng, tự do, dân chủ"
+    },
+    {
+      "id": "Q36",
+      "kind": "abc",
+      "text": "Thuyết “Tam dân” của Tôn Trung Sơn gồm những nội dung nào?",
+      "options": {
+        "A": "Dân tộc độc lập, dân quyền tự do, dân sinh hạnh phúc",
+        "B": "Dân chủ, dân trí, dân khí",
+        "C": "Dân giàu, nước mạnh, xã hội công bằng"
+      },
+      "correctOption": "A",
+      "hint": "Độc lập – tự do – hạnh phúc"
+    },
+    {
+      "id": "Q37",
+      "kind": "abc",
+      "text": "Trong “Bản án chế độ thực dân Pháp” (1925), Hồ Chí Minh ví chủ nghĩa tư bản như con vật nào?",
+      "options": {
+        "A": "Con rắn độc",
+        "B": "Con đỉa có hai cái vòi",
+        "C": "Con hổ giấy"
+      },
+      "correctOption": "B",
+      "hint": "Phải cắt cả hai… cùng lúc"
+    },
+    {
+      "id": "Q38",
+      "kind": "abc",
+      "text": "Theo Sách lược vắn tắt (1930), với phú nông, trung, tiểu địa chủ và tư bản Việt Nam chưa rõ mặt phản cách mạng, Đảng phải làm gì?",
+      "options": {
+        "A": "Đánh đổ ngay",
+        "B": "Lợi dụng, ít ra cũng làm cho họ trung lập",
+        "C": "Kết nạp họ vào Đảng"
+      },
+      "correctOption": "B",
+      "hint": "Không đẩy họ về phía kẻ thù"
+    },
+    {
+      "id": "Q39",
+      "kind": "abc",
+      "text": "Trong câu nói về “ham muốn tột bậc”, Hồ Chí Minh mong đồng bào ai cũng có cơm ăn áo mặc, ai cũng được…?",
+      "options": {
+        "A": "Học hành",
+        "B": "Giàu sang",
+        "C": "Đi bầu cử"
+      },
+      "correctOption": "A",
+      "hint": "Liên quan đến giáo dục"
+    },
+    {
+      "id": "Q40",
+      "kind": "abc",
+      "text": "Theo Hồ Chí Minh, con đường giải phóng ở các nước thuộc địa đi theo trình tự nào?",
+      "options": {
+        "A": "Giải phóng giai cấp → dân tộc → xã hội → con người",
+        "B": "Giải phóng dân tộc → xã hội → giai cấp → con người",
+        "C": "Giải phóng con người → giai cấp → dân tộc → xã hội"
+      },
+      "correctOption": "B",
+      "hint": "Dân tộc đứng đầu tiên"
+    }
+  ]
+}

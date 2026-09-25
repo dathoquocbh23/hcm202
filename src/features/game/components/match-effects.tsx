@@ -15,8 +15,9 @@ type FxBody =
   | { id: string; kind: 'victory'; winnerId: string | null };
 export type Fx = FxBody & { delay: number };
 
-const DURATION: Record<Fx['kind'], number> = { skill: 1800, result: 2700, toast: 2300, victory: 4500 };
-const STAGGER: Record<Fx['kind'], number> = { skill: 1100, result: 1300, toast: 450, victory: 0 };
+// Skill casts match the engine's 3s answer-clock grace (FX_GRACE_MS); keep the CSS animations in step.
+const DURATION: Record<Fx['kind'], number> = { skill: 3000, result: 4000, toast: 2300, victory: 4500 };
+const STAGGER: Record<Fx['kind'], number> = { skill: 1800, result: 1300, toast: 450, victory: 0 };
 
 /** Older stored events have no structured fields, so fall back to the log text. */
 function outcomeOf(event: GameEvent): { outcome: Outcome; damage: number } {

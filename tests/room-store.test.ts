@@ -255,3 +255,12 @@ test('finished semifinals fill the final, which starts only after the invitation
   assert.ok(view.matches[0].game.lastAnswer.correctAnswer);
   assert.equal(view.matches[0].game.review.length, 1);
 });
+
+test('new rooms carry all three sets and the official bracket gives each match its own set', async (t) => {
+  const db = database(t);
+  const room = await createRoom('Three sets', false);
+  assert.deepEqual(room.sets.map((set) => set.id), ['hcm-independence-sample', 'hcm-bo-2-ban-ket-b', 'hcm-bo-3-chung-ket']);
+  db.records.get(room.code)!.body.teams = ['a', 'b', 'c', 'd'].map((id) => ({ id, name: id.toUpperCase(), color: 'red', status: 'approved', ready: false, tokenHash: id, lastSeen: 0, joinedAt: 0 }));
+  const drawn = await commandRoom(room.code, { role: 'admin' }, { type: 'create-bracket' }, 'draw-bracket', room.revision);
+  assert.deepEqual(drawn.matches.map((match) => match.setId), room.sets.map((set) => set.id));
+});

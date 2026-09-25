@@ -34,7 +34,7 @@ Chỉ sao chép `.env.example` nếu chưa có `.env.local`, tránh ghi đè c�
 URL cũng có thể đặt bằng `NEXT_PUBLIC_SUPABASE_URL`. Nếu có cả hai biến, ứng dụng ưu tiên `SUPABASE_URL`. `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` không được dùng trong luồng API hiện tại; server vẫn cần khóa bí mật riêng.
 
 3. Chạy `npm run supabase:check`. Lệnh này chỉ kiểm tra kết nối và đọc bảng, không tạo hay sửa dữ liệu.
-4. Chạy `npm run dev`, vào `/admin`, đăng nhập bằng `ADMIN_PASSWORD` và tạo phòng chơi thử đầu tiên. Bộ câu hỏi mẫu tự được thêm vào phòng.
+4. Chạy `npm run dev`, vào `/admin`, đăng nhập bằng `ADMIN_PASSWORD` và tạo phòng chơi thử đầu tiên. Ba bộ câu hỏi có sẵn tự được thêm vào phòng.
 
 Khóa Supabase chỉ nằm trên server, không thêm tiền tố `NEXT_PUBLIC_`. Nếu project dùng khóa cũ, đặt `SUPABASE_SERVICE_ROLE_KEY` thay cho `SUPABASE_SECRET_KEY`. Publishable/anon key không đủ quyền cho kiến trúc này. Bảng `arena_rooms` bật RLS và không cấp quyền cho `anon`/`authenticated`; trình duyệt truy cập qua API Next.js đã kiểm tra phiên Admin/đội/khán giả. Không tạo policy cho phép công khai đọc `body`, vì trường này có đáp án và thẻ riêng của đội. Xem [tài liệu API keys của Supabase](https://supabase.com/docs/guides/getting-started/api-keys).
 
@@ -53,7 +53,7 @@ Giao diện và API được deploy chung trên Vercel. Không cần server Node
 
 1. Admin đăng nhập tại `/admin` và tạo phòng. Chọn **Chế độ chơi thử** nếu muốn dùng lại cùng bộ câu hỏi mẫu ở cả ba trận.
 2. Gửi mã phòng hoặc liên kết tham gia cho bốn đội. Mỗi đội nhập tên, chờ duyệt, rồi bấm **Đội tôi đã sẵn sàng**.
-3. Admin duyệt đủ bốn đội, bốc thăm hai trận bán kết và gán bộ câu hỏi cho từng trận. Chế độ thi chính thức không cho dùng trùng bộ câu hỏi; bộ mẫu chỉ đủ cho một trận.
+3. Admin duyệt đủ bốn đội, bốc thăm hai trận bán kết và gán bộ câu hỏi cho từng trận. Khi bốc thăm, Bộ 1, 2, 3 được tự gán cho Bán kết A, Bán kết B và Chung kết; Admin có thể đổi trên sơ đồ. Chế độ thi chính thức không cho dùng trùng bộ câu hỏi.
 4. Admin bắt đầu trận khi cả hai đội đã sẵn sàng. Thiết bị của hai đội tự chuyển từ phòng chờ sang bàn học 2.5D. Đến pha cần quyết định, **chỉ thiết bị của đội đó** mở bảng chọn riêng nổi trên bàn học; sau khi xác nhận, bảng đóng và bàn học lại hiện trọn vẹn.
 5. Hai trận bán kết có thể chạy song song: bấm **Bắt đầu cả hai bán kết cùng lúc** (hoặc bắt đầu từng trận). Mỗi trận có đồng hồ, nút tạm dừng và liên kết xem riêng. Admin có thể tạm dừng và tiếp tục đồng hồ, nhưng không thao tác thay đội.
 6. Để khán giả xem hoặc stream, bấm **Sao chép liên kết** ở mục *Liên kết khán giả · 2 màn hình* (`/rooms/<mã>/live?display=…`). Trang này chỉ xem, hiện hai bàn bán kết cạnh nhau và tự chuyển sang toàn màn hình khi chung kết bắt đầu. Có thể thêm liên kết làm *Browser Source* trong OBS (khuyên dùng 1920×1080). Ai có liên kết đều xem được, nên chỉ gửi cho người cần xem.
@@ -61,12 +61,12 @@ Giao diện và API được deploy chung trên Vercel. Không cần server Node
 
 ## Bộ câu hỏi
 
-Ứng dụng kèm một bộ mẫu từ tài liệu bài tập gồm 20 câu hỏi, 12 thẻ đáp án và 6 thẻ nhiễu. Admin mở **Bộ câu hỏi** trong phòng để xem đáp án và tải JSON mẫu. Để tổ chức đủ ba trận với câu hỏi riêng, sửa `id`, nội dung, đáp án trong file mẫu và nhập hai bộ JSON mới. Bộ nhập được kiểm tra số lượng, loại câu, ID và sự liên kết giữa câu điền khuyết với thẻ đáp án. Đáp án đúng và thẻ trên tay không được gửi cho đối thủ hoặc màn hình trình chiếu trước khi lật kết quả.
+Ứng dụng kèm ba bộ câu hỏi từ tài liệu *Đấu Trường Tri Thức – Bản góp ý v2*, mỗi bộ gồm 20 câu hỏi (14 điền khuyết, 6 ABC), 12 thẻ đáp án và 6 thẻ nhiễu: Bộ 1 (`sample-set.json`, các luận điểm cốt lõi), Bộ 2 (`set-2-ban-ket-b.json`, văn kiện và mốc lịch sử), Bộ 3 (`set-3-chung-ket.json`, trích dẫn và cơ sở lý luận, khó hơn). Mọi phòng mới đều có sẵn cả ba bộ. Admin mở **Bộ câu hỏi** trong phòng để xem đáp án và tải JSON; muốn dùng bộ riêng thì sửa `id`, nội dung, đáp án trong file tải về rồi nhập JSON. Bộ nhập được kiểm tra số lượng, loại câu, ID và sự liên kết giữa câu điền khuyết với thẻ đáp án. Đáp án đúng và thẻ trên tay không được gửi cho đối thủ hoặc màn hình trình chiếu trước khi lật kết quả.
 
 ## Kiến trúc
 
 - `src/app`: trang và API Next.js App Router.
-- `src/features/game`: luật thi đấu, dữ liệu bộ mẫu, màn hình bàn học và màn hình thao tác.
+- `src/features/game`: luật thi đấu, dữ liệu ba bộ câu hỏi, màn hình bàn học và màn hình thao tác.
 - `src/features/rooms`: phòng chờ, Admin, thư viện thẻ.
 - `src/lib/server`: phiên truy cập, lưu trữ Supabase qua REST API, chiếu trạng thái riêng cho Admin/đội/trình chiếu.
 - `supabase/migrations`: SQL tạo bảng và quyền truy cập.

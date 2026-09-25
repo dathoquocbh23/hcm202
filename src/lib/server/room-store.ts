@@ -2,11 +2,14 @@ import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from
 import { insertStoredRoom, listStoredRooms, readStoredRoom, updateStoredRoom } from './room-repository.ts';
 import { advanceGame, actGame, createGame } from '../../features/game/engine.ts';
 import sampleJson from '../../features/game/data/sample-set.json' with { type: 'json' };
+import set2Json from '../../features/game/data/set-2-ban-ket-b.json' with { type: 'json' };
+import set3Json from '../../features/game/data/set-3-chung-ket.json' with { type: 'json' };
 import { skillById } from '../../features/game/skills.ts';
 import { validateQuestionSet } from '../../features/game/validate-set.ts';
 import type { AnswerRecord, GameCommand, GameState, Match, QuestionSet, Room, Team, Viewer } from '../../features/game/types.ts';
 
-const sampleSet = sampleJson as unknown as QuestionSet;
+/** Bộ 1–3 from the tournament document: semifinal A, semifinal B, final. Every new room gets all three. */
+export const BUILT_IN_SETS = [sampleJson, set2Json, set3Json] as unknown as QuestionSet[];
 const palette: Team['color'][] = ['red', 'yellow', 'green', 'blue'];
 function hash(value: string): string { return createHash('sha256').update(value).digest('hex'); }
 function equal(a: string, b: string): boolean {
@@ -62,7 +65,7 @@ export async function createRoom(title: string, practiceReuse: boolean): Promise
     const code = Array.from(randomBytes(6), (byte) => alphabet[byte % alphabet.length]).join('');
     const room: Room = {
       code, title: clean, createdAt: Date.now(), joinLocked: false, practiceReuse,
-      teams: [], matches: [], sets: [sampleSet], events: [], revision: 1,
+      teams: [], matches: [], sets: structuredClone(BUILT_IN_SETS), events: [], revision: 1,
       displayTokenHash: hash(displayToken(code)), processedCommands: []
     };
     if (await insertStoredRoom(room)) return room;
@@ -209,11 +212,12 @@ export async function commandRoom(code: string, viewer: Viewer, command: RoomCom
           const other = Math.floor(Math.random() * (index + 1));
           [ordered[index], ordered[other]] = [ordered[other], ordered[index]];
         }
-        const defaultSet = room.sets[0].id;
+        // Official mode gives each match its own set (Bộ 1, 2, 3); practice mode reuses the first.
+        const setFor = (index: number) => (room.practiceReuse ? room.sets[0] : room.sets[index])?.id ?? null;
         room.matches = [
-          { id: randomUUID(), round: 'semifinal-a', teamIds: [ordered[0].id, ordered[1].id], setId: defaultSet, status: 'pending', game: null },
-          { id: randomUUID(), round: 'semifinal-b', teamIds: [ordered[2].id, ordered[3].id], setId: room.practiceReuse ? defaultSet : null, status: 'pending', game: null },
-          { id: randomUUID(), round: 'final', teamIds: null, setId: room.practiceReuse ? defaultSet : null, status: 'pending', game: null }
+          { id: randomUUID(), round: 'semifinal-a', teamIds: [ordered[0].id, ordered[1].id], setId: setFor(0), status: 'pending', game: null },
+          { id: randomUUID(), round: 'semifinal-b', teamIds: [ordered[2].id, ordered[3].id], setId: setFor(1), status: 'pending', game: null },
+          { id: randomUUID(), round: 'final', teamIds: null, setId: setFor(2), status: 'pending', game: null }
         ];
         room.joinLocked = true;
         room.events.push({ id: randomUUID(), at, turn: 0, type: 'bracket', text: 'Đã bốc thăm chia hai trận bán kết.' });

@@ -1,0 +1,265 @@
+{
+  "id": "hcm-bo-3-chung-ket",
+  "title": "Bộ 3 · Chung kết · Trích dẫn nguyên văn, cơ sở lý luận",
+  "reviewStatus": "teacher-review-required",
+  "answers": [
+    {
+      "id": "A25",
+      "code": "★25",
+      "text": "Tự quyết"
+    },
+    {
+      "id": "A26",
+      "code": "★26",
+      "text": "Thư gửi Liên hợp quốc"
+    },
+    {
+      "id": "A27",
+      "code": "★27",
+      "text": "Dân cày nghèo"
+    },
+    {
+      "id": "A28",
+      "code": "★28",
+      "text": "Ngày làm 8 giờ"
+    },
+    {
+      "id": "A29",
+      "code": "★29",
+      "text": "Cách mệnh không đến nơi"
+    },
+    {
+      "id": "A30",
+      "code": "★30",
+      "text": "Mã Khắc Tư"
+    },
+    {
+      "id": "A31",
+      "code": "★31",
+      "text": "Đảng của dân tộc Việt Nam"
+    },
+    {
+      "id": "A32",
+      "code": "★32",
+      "text": "Lực lượng khổng lồ"
+    },
+    {
+      "id": "A33",
+      "code": "★33",
+      "text": "Đánh chết rắn đằng đuôi"
+    },
+    {
+      "id": "A34",
+      "code": "★34",
+      "text": "Bà đỡ"
+    },
+    {
+      "id": "A35",
+      "code": "★35",
+      "text": "Sự nỗ lực của bản thân anh em"
+    },
+    {
+      "id": "A36",
+      "code": "★36",
+      "text": "Kẻ mạnh đối với kẻ yếu"
+    }
+  ],
+  "decoys": [
+    {
+      "id": "D301",
+      "text": "Quyền tự trị"
+    },
+    {
+      "id": "D302",
+      "text": "Đảng của giai cấp công nhân"
+    },
+    {
+      "id": "D303",
+      "text": "Con đỉa hai vòi"
+    },
+    {
+      "id": "D304",
+      "text": "Đội quân chủ lực"
+    },
+    {
+      "id": "D305",
+      "text": "Sự giúp đỡ của Quốc tế Cộng sản"
+    },
+    {
+      "id": "D306",
+      "text": "Thư gửi Hội Quốc liên"
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q41",
+      "kind": "fill",
+      "text": "Tại Hội nghị Vécxây (1919), Tổng thống Mỹ V. Wilson kêu gọi trao quyền ______ cho các dân tộc thuộc địa.",
+      "answerId": "A25",
+      "hint": "Quyền tự… (không phải tự trị)"
+    },
+    {
+      "id": "Q42",
+      "kind": "fill",
+      "text": "Theo Hồ Chí Minh, độc lập mà người dân không có quyền ______ về ngoại giao, không có quân đội riêng, không có nền tài chính riêng… thì độc lập đó chẳng có ý nghĩa gì.",
+      "answerId": "A25",
+      "hint": "Cùng đáp án với câu về Tổng thống Wilson"
+    },
+    {
+      "id": "Q43",
+      "kind": "fill",
+      "text": "“Nhân dân chúng tôi… kiên quyết chiến đấu đến cùng để bảo vệ những quyền thiêng liêng nhất: toàn vẹn lãnh thổ cho Tổ quốc và độc lập cho đất nước” — trích ______ (1946).",
+      "answerId": "A26",
+      "hint": "Gửi một tổ chức quốc tế mới thành lập năm 1945"
+    },
+    {
+      "id": "Q44",
+      "kind": "fill",
+      "text": "Chánh cương vắn tắt của Đảng chủ trương: “thâu hết ruộng đất của đế quốc chủ nghĩa làm của công chia cho ______”.",
+      "answerId": "A27",
+      "hint": "Những người làm ruộng khó khăn nhất"
+    },
+    {
+      "id": "Q45",
+      "kind": "fill",
+      "text": "Để độc lập gắn với quyền lợi của công nhân, Chánh cương vắn tắt chủ trương “thi hành luật ______”.",
+      "answerId": "A28",
+      "hint": "Một con số giờ làm việc"
+    },
+    {
+      "id": "Q46",
+      "kind": "fill",
+      "text": "Hồ Chí Minh đánh giá cách mạng Pháp, Mỹ là “cách mệnh tư bản, ______”: tiếng là cộng hòa và dân chủ, kỳ thực trong thì tước lục công nông, ngoài thì áp bức thuộc địa.",
+      "answerId": "A29",
+      "hint": "Cách mệnh chưa… (tới đích)"
+    },
+    {
+      "id": "Q47",
+      "kind": "fill",
+      "text": "“Nói tóm lại là phải theo chủ nghĩa ______ và Lênin.”",
+      "answerId": "A30",
+      "hint": "Cách gọi Hán – Việt tên của C.Mác"
+    },
+    {
+      "id": "Q48",
+      "kind": "fill",
+      "text": "Báo cáo chính trị tại Đại hội II (1951): Đảng Lao động Việt Nam là Đảng của giai cấp công nhân và nhân dân lao động, “cho nên nó phải là ______”.",
+      "answerId": "A31",
+      "hint": "Đảng của… cả dân tộc"
+    },
+    {
+      "id": "Q49",
+      "kind": "fill",
+      "text": "Hồ Chí Minh dự báo: khi hàng trăm triệu nhân dân châu Á bị tàn sát và áp bức thức tỉnh, “họ sẽ hình thành một ______”.",
+      "answerId": "A32",
+      "hint": "Lực lượng… rất lớn"
+    },
+    {
+      "id": "Q50",
+      "kind": "fill",
+      "text": "Theo Hồ Chí Minh, nếu xem thường cách mạng ở thuộc địa thì chẳng khác gì “______”.",
+      "answerId": "A33",
+      "hint": "Đánh rắn… sai chỗ"
+    },
+    {
+      "id": "Q51",
+      "kind": "fill",
+      "text": "Trong bộ Tư bản (1867), C.Mác viết: “Bạo lực là ______ của một chế độ xã hội cũ đang thai nghén một chế độ mới”.",
+      "answerId": "A34",
+      "hint": "Người giúp sinh nở"
+    },
+    {
+      "id": "Q52",
+      "kind": "fill",
+      "text": "Tinh thần đấu tranh hết sức quyết liệt của các dân tộc thuộc địa, theo Hồ Chí Minh, sẽ bùng lên mạnh mẽ, hình thành một “______” khi được tập hợp, hướng dẫn và giác ngộ.",
+      "answerId": "A32",
+      "hint": "Cùng đáp án với câu về nhân dân châu Á"
+    },
+    {
+      "id": "Q53",
+      "kind": "fill",
+      "text": "Tuyên ngôn của Hội liên hiệp thuộc địa: “công cuộc giải phóng anh em chỉ có thể thực hiện được bằng ______”.",
+      "answerId": "A35",
+      "hint": "Tự lực, không trông chờ bên ngoài"
+    },
+    {
+      "id": "Q54",
+      "kind": "fill",
+      "text": "“Chế độ thực dân, tự bản thân nó, đã là một hành động bạo lực của ______ rồi.”",
+      "answerId": "A36",
+      "hint": "Mạnh bắt nạt yếu"
+    },
+    {
+      "id": "Q55",
+      "kind": "abc",
+      "text": "Theo Chánh cương vắn tắt (1930), cách mạng Việt Nam làm “tư sản dân quyền cách mạng và thổ địa cách mạng” để đi tới đâu?",
+      "options": {
+        "A": "Xã hội cộng sản",
+        "B": "Chế độ quân chủ lập hiến",
+        "C": "Nền cộng hòa tư sản"
+      },
+      "correctOption": "A",
+      "hint": "Gắn với chủ nghĩa xã hội"
+    },
+    {
+      "id": "Q56",
+      "kind": "abc",
+      "text": "Vì sao Chánh cương vắn tắt chỉ nêu “thâu hết ruộng đất của đế quốc chủ nghĩa” mà chưa nêu “người cày có ruộng”?",
+      "options": {
+        "A": "Vì Hồ Chí Minh xem nhẹ vấn đề ruộng đất",
+        "B": "Vì đặt nhiệm vụ chống đế quốc, giải phóng dân tộc lên hàng đầu; chống phong kiến thực hiện từng bước",
+        "C": "Vì Quốc tế Cộng sản yêu cầu như vậy"
+      },
+      "correctOption": "B",
+      "hint": "Nhiệm vụ nào là “trước hết, trên hết”?"
+    },
+    {
+      "id": "Q57",
+      "kind": "abc",
+      "text": "Đại hội VI Quốc tế Cộng sản (1928) cho rằng công cuộc giải phóng thuộc địa chỉ thực hiện hoàn toàn khi nào?",
+      "options": {
+        "A": "Khi thuộc địa tự đứng lên",
+        "B": "Khi giai cấp vô sản giành thắng lợi ở các nước tư bản tiên tiến",
+        "C": "Khi có sự can thiệp của Hội Quốc liên"
+      },
+      "correctOption": "B",
+      "hint": "Quan điểm mà Hồ Chí Minh không đồng tình"
+    },
+    {
+      "id": "Q58",
+      "kind": "abc",
+      "text": "Theo Hồ Chí Minh, quan hệ giữa cách mạng thuộc địa và cách mạng vô sản ở chính quốc là gì?",
+      "options": {
+        "A": "Thuộc địa lệ thuộc chính quốc",
+        "B": "Chính quốc lệ thuộc thuộc địa",
+        "C": "Bình đẳng, không lệ thuộc, phụ thuộc vào nhau"
+      },
+      "correctOption": "C",
+      "hint": "Không bên nào đứng trên bên nào"
+    },
+    {
+      "id": "Q59",
+      "kind": "abc",
+      "text": "Theo Hồ Chí Minh, việc lựa chọn hình thức đấu tranh cách mạng phải căn cứ vào đâu?",
+      "options": {
+        "A": "Chỉ thị của Quốc tế Cộng sản",
+        "B": "Kinh nghiệm của Cách mạng Tháng Mười Nga",
+        "C": "Hoàn cảnh lịch sử cụ thể"
+      },
+      "correctOption": "C",
+      "hint": "“Tùy tình hình cụ thể…”"
+    },
+    {
+      "id": "Q60",
+      "kind": "abc",
+      "text": "Quan niệm “có dân là có tất cả… được lòng dân thì được tất cả, mất lòng dân thì mất tất cả” thể hiện điều gì?",
+      "options": {
+        "A": "Cách mạng là sự nghiệp của quần chúng nhân dân",
+        "B": "Cách mạng là việc riêng của lãnh tụ",
+        "C": "Cách mạng phải dựa vào viện trợ nước ngoài"
+      },
+      "correctOption": "A",
+      "hint": "“Việc chung của dân chúng”"
+    }
+  ]
+}

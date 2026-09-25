@@ -7,7 +7,8 @@ const PHASE_MS = {
   'attack-skill': 10_000,
   'defense-skill': 10_000,
   reaction: 5_000,
-  reveal: 2_000,
+  // Long enough for everyone to read the locked answer and the correct one.
+  reveal: 10_000,
   reward: 5_000,
   'steal-cancel': 5_000,
   overflow: 10_000,
@@ -15,7 +16,9 @@ const PHASE_MS = {
 } as const;
 
 /** Skill and Vô Hiệu animations cover the answer screen; the defender gets this time back. */
-const FX_GRACE_MS = 2_000;
+const FX_GRACE_MS = 3_000;
+/** Fill-in questions show the correct card plus this many minus one wrong cards. */
+const FILL_CHOICES = 6;
 
 function shuffled<T>(items: T[]): T[] {
   const next = [...items];
@@ -130,13 +133,21 @@ export function createGame(set: QuestionSet, teamIds: [string, string], at: numb
   return game;
 }
 
-function chooseQuestion(game: GameState, questionId: string, at: number): void {
+function dealBoard(game: GameState, set: QuestionSet): void {
+  const question = currentQuestion(set, game);
+  if (question?.kind !== 'fill') return;
+  const wrong = shuffled(set.answers.map((a) => a.id).filter((id) => id !== question.answerId)).slice(0, FILL_CHOICES - 1);
+  game.answerBoard = shuffled([question.answerId, ...wrong]);
+}
+
+function chooseQuestion(game: GameState, set: QuestionSet, questionId: string, at: number): void {
   if (!game.candidates.includes(questionId)) throw new Error('Câu hỏi không nằm trong hai thẻ vừa rút.');
   const other = game.candidates.find((id) => id !== questionId);
   if (other) game.questionDeck.push(other);
   game.candidates = [];
   game.activeQuestionId = questionId;
   game.questionDiscard.push(questionId);
+  dealBoard(game, set);
   log(game, at, 'question', `Đánh câu hỏi ${questionId}.`, game.attackerId);
   setPhase(game, 'attack-skill', at, PHASE_MS['attack-skill']);
 }
@@ -224,11 +235,11 @@ function answer(game: GameState, set: QuestionSet, answerId: string, at: number)
   finishAnswer(game, set, at, answerId, correct, game.phase === 'second-answer');
 }
 
-function startReward(game: GameState, at: number): void {
+function startReward(game: GameState, set: QuestionSet, at: number): void {
   const card = game.skillDeck.shift() ?? null;
   if (!card) {
     log(game, at, 'empty-skill-deck', 'Chồng kỹ năng đã hết.');
-    endTurn(game, at);
+    endTurn(game, set, at);
     return;
   }
   game.rewardCard = { ...card, acquiredTurn: game.turn };
@@ -236,18 +247,18 @@ function startReward(game: GameState, at: number): void {
   log(game, at, 'reward', 'Một thẻ kỹ năng được rút.', game.rewardOwnerId ?? undefined);
   const thiefId = game.rewardOwnerId ? ownOther(game, game.rewardOwnerId) : '';
   if (thiefId && game.hands[thiefId].some((item) => item.kind === 'steal' && item.acquiredTurn < game.turn)) setPhase(game, 'reward', at, PHASE_MS.reward);
-  else settleReward(game, at);
+  else settleReward(game, set, at);
 }
 
-function settleReward(game: GameState, at: number): void {
+function settleReward(game: GameState, set: QuestionSet, at: number): void {
   const recipient = game.rewardRecipientId;
   if (recipient && game.rewardCard) game.hands[recipient].push(game.rewardCard);
   game.rewardCard = null;
   if (recipient && game.hands[recipient].length > 2) setPhase(game, 'overflow', at, PHASE_MS.overflow);
-  else endTurn(game, at);
+  else endTurn(game, set, at);
 }
 
-function beginSudden(game: GameState, at: number): void {
+function beginSudden(game: GameState, set: QuestionSet, at: number): void {
   const available = game.questionDeck.filter((id) => !game.suddenUsed.includes(id));
   const source = available.length ? available : game.questionDiscard.filter((id) => !game.suddenUsed.includes(id));
   if (!source.length) game.suddenUsed = [];
@@ -255,16 +266,17 @@ function beginSudden(game: GameState, at: number): void {
   game.activeQuestionId = source[0] ?? fallback;
   if (!game.activeQuestionId) throw new Error('Không còn câu hỏi cho lượt đột tử.');
   game.suddenUsed.push(game.activeQuestionId);
+  dealBoard(game, set);
   game.firstWrongId = null;
   game.reactionsDone = [];
   setPhase(game, 'sudden', at, PHASE_MS.sudden);
   log(game, at, 'sudden', `Đột tử: câu ${game.activeQuestionId}.`);
 }
 
-function completeLimit(game: GameState, at: number): void {
+function completeLimit(game: GameState, set: QuestionSet, at: number): void {
   const [a, b] = game.teamIds;
   if (game.hp[a] === game.hp[b]) {
-    beginSudden(game, at);
+    beginSudden(game, set, at);
     return;
   }
   game.winnerId = game.hp[a] > game.hp[b] ? a : b;
@@ -273,13 +285,13 @@ function completeLimit(game: GameState, at: number): void {
   log(game, at, 'completed', 'Hết giới hạn lượt hoặc thời gian. Trận đấu kết thúc.', game.winnerId);
 }
 
-function endTurn(game: GameState, at: number): void {
+function endTurn(game: GameState, set: QuestionSet, at: number): void {
   for (const skill of [game.attackSkill, game.defenseSkill]) {
     if (skill && skill.id !== game.cancelledSkillId) game.skillDiscard.push(skill);
   }
   game.attackCounts[game.attackerId]++;
   if (game.turn >= 20 || game.elapsedActiveMs >= 20 * 60_000) {
-    completeLimit(game, at);
+    completeLimit(game, set, at);
     return;
   }
   [game.attackerId, game.defenderId] = [game.defenderId, game.attackerId];
@@ -303,7 +315,7 @@ function suddenAnswer(game: GameState, set: QuestionSet, teamId: string, answerI
   } else {
     game.reactionsDone.push(teamId);
     log(game, at, 'sudden-wrong', 'Một đội đã trả lời chưa đúng trong lượt đột tử.', teamId);
-    if (game.reactionsDone.length === 2) beginSudden(game, at);
+    if (game.reactionsDone.length === 2) beginSudden(game, set, at);
   }
 }
 
@@ -315,13 +327,13 @@ export function advanceGame(source: GameState, set: QuestionSet, now: number): G
     const at = game.phaseDeadline;
     spendActiveTime(game, at);
     switch (game.phase) {
-      case 'question': chooseQuestion(game, game.candidates[0], at); break;
+      case 'question': chooseQuestion(game, set, game.candidates[0], at); break;
       case 'attack-skill': beginReactionOrAnswer(game, set, at); break;
       case 'defense-skill': beginReactionOrAnswer(game, set, at); break;
       case 'reaction': game.answerRemainingMs != null ? resumeAnswerAfterReaction(game, set, at) : beginAnswer(game, set, at); break;
       case 'answer': case 'second-answer': finishAnswer(game, set, at, null, false); break;
-      case 'reveal': startReward(game, at); break;
-      case 'reward': case 'steal-cancel': settleReward(game, at); break;
+      case 'reveal': startReward(game, set, at); break;
+      case 'reward': case 'steal-cancel': settleReward(game, set, at); break;
       case 'overflow': {
         const teamId = game.rewardRecipientId;
         if (teamId && game.hands[teamId].length > 2) {
@@ -329,10 +341,10 @@ export function advanceGame(source: GameState, set: QuestionSet, now: number): G
           if (oldest) game.skillDiscard.push(oldest);
           log(game, at, 'overflow', 'Hết thời gian chọn thẻ bỏ: thẻ cũ nhất được bỏ.', teamId);
         }
-        endTurn(game, at);
+        endTurn(game, set, at);
         break;
       }
-      case 'sudden': beginSudden(game, at); break;
+      case 'sudden': beginSudden(game, set, at); break;
     }
   }
   if (game.phaseDeadline !== null) spendActiveTime(game, now);
@@ -367,7 +379,7 @@ export function actGame(source: GameState, set: QuestionSet, actorId: string | '
   switch (command.type) {
     case 'choose-question':
       if (game.phase !== 'question' || !attack) throw new Error('Chưa tới lượt đội chọn câu hỏi.');
-      chooseQuestion(game, command.questionId, now);
+      chooseQuestion(game, set, command.questionId, now);
       break;
     case 'play-skill': {
       const category = game.phase === 'attack-skill' && attack ? 'attack' : (game.phase === 'answer' || game.phase === 'defense-skill') && defense ? 'defense' : null;
@@ -405,8 +417,8 @@ export function actGame(source: GameState, set: QuestionSet, actorId: string | '
           if (game.answerRemainingMs != null) resumeAnswerAfterReaction(game, set, now);
           else beginAnswer(game, set, now);
         }
-      } else if (game.phase === 'reward' && actorId !== game.rewardOwnerId) settleReward(game, now);
-      else if (game.phase === 'steal-cancel' && actorId === game.rewardOwnerId) settleReward(game, now);
+      } else if (game.phase === 'reward' && actorId !== game.rewardOwnerId) settleReward(game, set, now);
+      else if (game.phase === 'steal-cancel' && actorId === game.rewardOwnerId) settleReward(game, set, now);
       else throw new Error('Không thể bỏ qua trong pha này.');
       break;
     case 'nullify': {
@@ -424,7 +436,7 @@ export function actGame(source: GameState, set: QuestionSet, actorId: string | '
         game.skillDiscard.push(takeReaction(game, actorId, 'nullify', now));
         game.rewardRecipientId = game.rewardOwnerId;
         log(game, now, 'nullify-steal', 'Đánh Cắp đã bị Vô Hiệu.', actorId);
-        settleReward(game, now);
+        settleReward(game, set, now);
       } else throw new Error('Không thể dùng Vô Hiệu lúc này.');
       break;
     }
@@ -441,7 +453,7 @@ export function actGame(source: GameState, set: QuestionSet, actorId: string | '
       game.rewardRecipientId = actorId;
       log(game, now, 'steal', 'Đánh Cắp thẻ kỹ năng vừa rút.', actorId);
       if (game.rewardOwnerId && game.hands[game.rewardOwnerId].some((card) => card.kind === 'nullify' && card.acquiredTurn < game.turn)) setPhase(game, 'steal-cancel', now, PHASE_MS['steal-cancel']);
-      else settleReward(game, now);
+      else settleReward(game, set, now);
       break;
     case 'discard': {
       if (game.phase !== 'overflow' || actorId !== game.rewardRecipientId) throw new Error('Đội không cần bỏ thẻ lúc này.');
@@ -450,7 +462,7 @@ export function actGame(source: GameState, set: QuestionSet, actorId: string | '
       game.hands[actorId] = game.hands[actorId].filter((card) => card.id !== command.cardId);
       game.skillDiscard.push(discarded);
       log(game, now, 'overflow', 'Đội đã bỏ một thẻ để giữ tối đa hai thẻ.', actorId);
-      endTurn(game, now);
+      endTurn(game, set, now);
       break;
     }
   }

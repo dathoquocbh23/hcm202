@@ -9,9 +9,11 @@ type MatchView = RoomView['matches'][number];
 interface Props {
   room: RoomView;
   code: string;
-  busy: boolean;
-  run: (command: RoomCommand) => Promise<void>;
-  startable: (matchId: string) => boolean;
+  busy?: boolean;
+  run?: (command: RoomCommand) => Promise<void>;
+  startable?: (matchId: string) => boolean;
+  /** Team lobby view: same tree, no admin controls. */
+  readOnly?: boolean;
 }
 
 function statusLabel(match: MatchView): string {
@@ -21,7 +23,7 @@ function statusLabel(match: MatchView): string {
   return 'Chưa bắt đầu';
 }
 
-function MatchCard({ room, code, busy, run, startable, match }: Props & { match: MatchView }) {
+function MatchCard({ room, code, busy = false, run = async () => {}, startable = () => false, readOnly = false, match }: Props & { match: MatchView }) {
   const final = match.round === 'final';
   const winnerId = match.status === 'completed' ? match.game?.winnerId : null;
   // Ready only matters for the final once the invitation is out.
@@ -41,13 +43,14 @@ function MatchCard({ room, code, busy, run, startable, match }: Props & { match:
         {showReady && team && <small className={team.ready ? 'ko-ready' : 'ko-waiting'}>{team.ready ? '● Sẵn sàng' : '○ Chưa sẵn sàng'}</small>}
       </div>;
     })}</div>
-    {match.status === 'pending' && <div className="ko-actions">
+    {readOnly && final && match.status === 'pending' && <small className="ko-note">{!match.teamIds ? 'Chờ hai trận bán kết kết thúc.' : !match.invitedAt ? 'Chờ Admin mời hai đội vào chung kết.' : allReady ? 'Hai đội đã sẵn sàng · chờ Admin bắt đầu.' : 'Chờ hai đội báo sẵn sàng.'}</small>}
+    {!readOnly && match.status === 'pending' && <div className="ko-actions">
       <select aria-label={`Bộ câu hỏi ${roundLabel(match.round)}`} value={match.setId ?? ''} disabled={busy} onChange={(event) => void run({ type: 'assign-set', matchId: match.id, setId: event.target.value })}><option value="">Chọn bộ câu hỏi</option>{room.sets?.map((set) => <option key={set.id} value={set.id}>{set.title}</option>)}</select>
       {final && !match.teamIds && <small>Chờ hai trận bán kết kết thúc.</small>}
       {final && match.teamIds && !match.invitedAt && <><button className="button small primary" disabled={busy} onClick={() => void run({ type: 'invite-final', matchId: match.id })}>🏆 Mời 2 đội vào chung kết</button><small>Màn hình hai đội thắng sẽ hiện lời mời vào phòng chờ.</small></>}
       {(!final || match.invitedAt) && match.teamIds && <><button className="button small primary" disabled={busy || !startable(match.id)} onClick={() => void run({ type: 'start-match', matchId: match.id })}>▶ Bắt đầu {final ? 'chung kết' : 'trận'}</button>{!match.setId ? <small>Cần gán bộ câu hỏi.</small> : !allReady && <small>{final ? 'Đã gửi lời mời · chờ hai đội bấm sẵn sàng.' : 'Chờ cả hai đội báo sẵn sàng.'}</small>}</>}
     </div>}
-    {match.status === 'active' && <Link className="text-button" href={`/rooms/${code}/watch/${match.id}`}>Theo dõi trận →</Link>}
+    {!readOnly && match.status === 'active' && <Link className="text-button" href={`/rooms/${code}/watch/${match.id}`}>Theo dõi trận →</Link>}
     {match.status === 'completed' && <Link className="text-button" href={`/rooms/${code}/match/${match.id}/result`}>Kết quả →</Link>}
   </article>;
 }
