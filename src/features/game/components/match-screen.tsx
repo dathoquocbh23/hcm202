@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { roundLabel, teamName, useRoom, type RoomView } from '../client';
+import { roundLabel, teamName, useFollowActiveMatch, useRoom, type RoomView } from '../client';
 import type { GameCommand } from '../types';
 import { DeskOverview } from './desk-overview';
 import { FocusOverlay } from './focus-overlay';
+import { FinalInvite } from '@/features/rooms/components/final-invite';
 
 export function MatchScreen({ code, matchId, display, spectator = false }: { code: string; matchId: string; display?: string; spectator?: boolean }) {
-  const { room, error, busy, now, gameAction } = useRoom(code, display);
+  const { room, error, busy, now, gameAction, send } = useRoom(code, display);
+  useFollowActiveMatch(spectator ? null : room, code, matchId);
   const [minimized, setMinimized] = useState(false);
   const [holdUntil, setHoldUntil] = useState(0);
   const match = room?.matches.find((item) => item.id === matchId);
@@ -37,6 +39,7 @@ export function MatchScreen({ code, matchId, display, spectator = false }: { cod
     <div aria-hidden={showFocus}><DeskOverview room={room} game={game} teamIds={teamIds} ownId={ownId} spectator={spectator || room.viewer.role !== 'team'} fxFixed={Boolean(ownId)} now={now} onContinue={canFocus && !showFocus ? () => { setMinimized(false); setHoldUntil(0); } : undefined} /></div>
     {showFocus && ownId && <FocusOverlay room={room} game={game} teamId={ownId} now={now} busy={busy} onAction={act} onMinimize={() => setMinimized(true)} />}
     {game.phase === 'completed' && <div className="match-result-banner"><div><span className="eyebrow">KẾT QUẢ TRẬN ĐẤU</span><h2>🏆 {teamName(room, game.winnerId)} chiến thắng</h2><p>{teamName(room, teamIds[0])} {game.hp[teamIds[0]]} HP — {game.hp[teamIds[1]]} HP {teamName(room, teamIds[1])} · {game.turn} lượt</p></div><Link href={`/rooms/${code}/match/${matchId}/result${display ? `?display=${encodeURIComponent(display)}` : ''}`} className="button primary">Xem kết quả chi tiết</Link></div>}
+    {!spectator && <FinalInvite room={room} code={code} send={send} />}
     {!showFocus && <div className="match-events"><strong>Diễn biến gần đây</strong><div>{[...game.events].reverse().slice(0, 4).map((event) => <span key={event.id}>{event.text}</span>)}</div></div>}
   </main>;
 }

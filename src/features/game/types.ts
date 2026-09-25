@@ -39,6 +39,18 @@ export interface GameEvent {
   outcome?: 'correct' | 'wrong' | 'timeout';
 }
 
+/** One answered question, kept so the result page can review every turn. */
+export interface AnswerRecord {
+  turn: number;
+  questionId: string;
+  teamId: string;
+  submitted: string | null;
+  outcome: 'correct' | 'wrong' | 'timeout';
+  damage: number;
+  skills: { kind: SkillId; cancelled: boolean }[];
+  sudden?: boolean;
+}
+
 export interface GameState {
   phase: GamePhase;
   phaseDeadline: number | null;
@@ -80,6 +92,8 @@ export interface GameState {
   victoryReason: 'knockout' | 'limit' | 'sudden' | null;
   suddenUsed: string[];
   events: GameEvent[];
+  /** Missing on matches stored before answers were recorded. */
+  answerLog?: AnswerRecord[];
 }
 
 export interface Team {
@@ -100,6 +114,8 @@ export interface Match {
   setId: string | null;
   status: 'pending' | 'active' | 'completed';
   game: GameState | null;
+  /** Final only: when the admin invited both winners to the lobby. */
+  invitedAt?: number | null;
 }
 
 export interface Room {

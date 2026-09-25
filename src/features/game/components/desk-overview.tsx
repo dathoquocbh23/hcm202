@@ -38,6 +38,12 @@ export function DeskOverview({ room, game, teamIds, ownId, spectator, now, onCon
   const submittedText = game.submittedAnswerId ? game.activeQuestion?.kind === 'abc'
     ? `${game.submittedAnswerId}. ${game.activeQuestion.options?.[game.submittedAnswerId as 'A' | 'B' | 'C'] ?? ''}`
     : game.answerCards.find((card) => card.id === game.submittedAnswerId)?.text ?? 'Thẻ đáp án đã chọn' : null;
+  // Options stay public; the correct one is only marked once the server reveals it.
+  const choiceState = (id: string, removed = false) => game.correctAnswer === id ? 'is-correct' : game.submittedAnswerId === id || game.firstWrongId === id ? 'is-wrong' : removed ? 'is-removed' : '';
+  const choices = game.activeQuestion?.kind === 'abc'
+    ? (['A', 'B', 'C'] as const).map((key) => ({ id: key, label: `${key}. ${game.activeQuestion?.options?.[key] ?? ''}`, state: choiceState(key, game.removedOptionIds.includes(key)) }))
+    : game.answerCards.map((card) => ({ id: card.id, label: card.text, state: choiceState(card.id) }));
+  const last = game.lastAnswer;
   const bottomTeam = room.teams.find((team) => team.id === bottomId);
   const topTeam = room.teams.find((team) => team.id === topId);
   const nameOf = (id?: string | null) => teamName(room, id);
@@ -61,7 +67,7 @@ export function DeskOverview({ room, game, teamIds, ownId, spectator, now, onCon
       {!fxFixed && <MatchFxLayer fx={fx} teamName={nameOf} sideOf={(id) => id === topId ? 'top' : 'bottom'} />}
       <div className="desk-scene-note">{game.phase === 'completed' ? `Chiến thắng: ${teamName(room, game.winnerId)}` : `Đang chờ ${activeName} · ${phaseLabel(game.phase)}`}</div>
     </div>
-    <div className="desk-detail"><div><span className="eyebrow">CÂU HỎI ĐANG ĐÁNH</span><p>{game.activeQuestion?.text ?? 'Đội tấn công đang chọn câu hỏi. Câu chưa được công khai.'}</p>{game.activeQuestion?.hint && <small>Gợi ý: {game.activeQuestion.hint}</small>}</div><div className="desk-detail-actions">{onContinue && game.private?.canAct && <button className="button primary" onClick={onContinue}>Tiếp tục lượt của bạn →</button>}<span className="status-pill">Lượt {game.turn} · {phaseLabel(game.phase)}</span></div></div>
+    <div className="desk-detail"><div><span className="eyebrow">CÂU HỎI ĐANG ĐÁNH{game.activeQuestion ? ` · ${game.activeQuestion.kind === 'abc' ? 'TRẮC NGHIỆM ABC' : 'ĐIỀN KHUYẾT'}` : ''}</span><p>{game.activeQuestion?.text ?? 'Đội tấn công đang chọn câu hỏi. Câu chưa được công khai.'}</p>{game.activeQuestion?.hint && <small>Gợi ý: {game.activeQuestion.hint}</small>}{choices.length > 0 && <div className={`desk-choices ${game.activeQuestion?.kind === 'abc' ? 'abc' : ''}`}>{choices.map((choice) => <span key={choice.id} className={choice.state}>{choice.label}</span>)}</div>}{last && <div className={`desk-last-answer ${last.outcome}`}><span className="eyebrow">ĐỘI THỦ ĐÃ CHỐT · LƯỢT {last.turn} · {last.questionId}</span><p><strong>{teamName(room, last.teamId)}</strong> {last.known ? last.submitted ? <>chọn <b>{last.submitted}</b></> : 'không chọn (hết giờ)' : ''} → <b>{last.outcome === 'correct' ? 'Đúng' : last.outcome === 'wrong' ? 'Sai' : 'Hết giờ'}</b>{last.outcome !== 'correct' && <> · Đáp án đúng: {last.correctAnswer}</>}{last.damage > 0 && ` · −${last.damage} HP`}</p></div>}</div><div className="desk-detail-actions">{onContinue && game.private?.canAct && <button className="button primary" onClick={onContinue}>Tiếp tục lượt của bạn →</button>}<span className="status-pill">Lượt {game.turn} · {phaseLabel(game.phase)}</span></div></div>
     {!compact && <div className="game-timeline"><span>CHỌN CÂU</span><span>KỸ NĂNG</span><span>PHẢN ĐÒN</span><span>TRẢ LỜI</span><span>KẾT QUẢ</span></div>}
     {fxFixed && <MatchFxLayer fixed fx={fx} teamName={nameOf} sideOf={(id) => id === topId ? 'top' : 'bottom'} />}
   </div>;

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { SKILLS, skillById } from './skills.ts';
-import type { GameCommand, GameEvent, GamePhase, GameState, QuestionSet, SkillCard, SkillId } from './types.ts';
+import type { AnswerRecord, GameCommand, GameEvent, GamePhase, GameState, QuestionSet, SkillCard, SkillId } from './types.ts';
 
 const PHASE_MS = {
   question: 20_000,
@@ -13,6 +13,9 @@ const PHASE_MS = {
   overflow: 10_000,
   sudden: 15_000
 } as const;
+
+/** Skill and Vô Hiệu animations cover the answer screen; the defender gets this time back. */
+const FX_GRACE_MS = 2_000;
 
 function shuffled<T>(items: T[]): T[] {
   const next = [...items];
@@ -27,6 +30,17 @@ function log(game: GameState, at: number, type: string, text: string, teamId?: s
   const event: GameEvent = { id: randomUUID(), at, turn: game.turn, type, text, hp: { ...game.hp }, ...detail };
   if (teamId) event.teamId = teamId;
   game.events.push(event);
+}
+
+function fxGrace(game: GameState, at: number): number {
+  const last = game.events.at(-1);
+  return last && (last.type === 'skill' || last.type === 'nullify') ? Math.max(0, FX_GRACE_MS - (at - last.at)) : 0;
+}
+
+function record(game: GameState, entry: Omit<AnswerRecord, 'turn' | 'questionId' | 'skills'>): void {
+  const skills = [game.attackSkill, game.defenseSkill].filter((card): card is SkillCard => Boolean(card))
+    .map((card) => ({ kind: card.kind, cancelled: card.id === game.cancelledSkillId }));
+  (game.answerLog ??= []).push({ turn: game.turn, questionId: game.activeQuestionId ?? '', skills: entry.sudden ? [] : skills, ...entry });
 }
 
 function setPhase(game: GameState, phase: GamePhase, at: number, durationMs?: number): void {
@@ -109,7 +123,7 @@ export function createGame(set: QuestionSet, teamIds: [string, string], at: numb
     turn: 1, attackCounts: { [teamIds[0]]: 0, [teamIds[1]]: 0 },
     correctCounts: { [teamIds[0]]: 0, [teamIds[1]]: 0 },
     defendedCounts: { [teamIds[0]]: 0, [teamIds[1]]: 0 },
-    winnerId: null, victoryReason: null, suddenUsed: [], events: []
+    winnerId: null, victoryReason: null, suddenUsed: [], events: [], answerLog: []
   };
   log(game, at, 'start', 'Trận đấu bắt đầu.');
   startTurn(game, at);
@@ -144,7 +158,7 @@ function beginAnswer(game: GameState, set: QuestionSet, at: number): void {
     game.removedAnswers = wrong.slice(0, question.kind === 'fill' ? 4 : 1);
   }
   const time = (activeKind(game, 'rush') ? 7 : 15) + (activeKind(game, 'extra-time') ? 10 : 0);
-  setPhase(game, 'answer', at, time * 1000);
+  setPhase(game, 'answer', at, time * 1000 + fxGrace(game, at));
   log(game, at, 'answer-open', `Bắt đầu trả lời: ${time} giây.`, game.defenderId);
 }
 
@@ -163,7 +177,7 @@ function applyDefenseSkillDuringAnswer(game: GameState, set: QuestionSet): void 
 function resumeAnswerAfterReaction(game: GameState, set: QuestionSet, at: number): void {
   const remaining = game.answerRemainingMs ?? 0;
   game.answerRemainingMs = null;
-  setPhase(game, 'answer', at, remaining);
+  setPhase(game, 'answer', at, remaining + fxGrace(game, at));
   applyDefenseSkillDuringAnswer(game, set);
 }
 
@@ -180,6 +194,7 @@ function finishAnswer(game: GameState, set: QuestionSet, at: number, submitted: 
   const q = currentQuestion(set, game);
   const key = answerKey(set, game.activeQuestionId ?? '');
   const answerLabel = q?.kind === 'fill' ? set.answers.find((a) => a.id === key)?.text : q?.kind === 'abc' ? `${key}. ${q.options[key as 'A' | 'B' | 'C']}` : key;
+  record(game, { teamId: game.defenderId, submitted, outcome: correct ? 'correct' : submitted ? 'wrong' : 'timeout', damage });
   log(game, at, 'answer-result', `${correct ? 'Trả lời đúng' : submitted ? 'Trả lời sai' : 'Hết giờ'} · ${damage} sát thương · Đáp án: ${answerLabel}.`, game.defenderId, { damage, outcome: correct ? 'correct' : submitted ? 'wrong' : 'timeout' });
   if (game.hp[game.defenderId] === 0) {
     game.winnerId = game.attackerId;
@@ -278,7 +293,9 @@ function suddenAnswer(game: GameState, set: QuestionSet, teamId: string, answerI
   const available = q.kind === 'fill' ? game.answerBoard : ['A', 'B', 'C'];
   if (!available.includes(answerId)) throw new Error('Đáp án không hợp lệ.');
   if (game.reactionsDone.includes(teamId)) throw new Error('Đội đã trả lời câu hỏi đột tử này.');
-  if (answerId === answerKey(set, q.id)) {
+  const correct = answerId === answerKey(set, q.id);
+  record(game, { teamId, submitted: answerId, outcome: correct ? 'correct' : 'wrong', damage: 0, sudden: true });
+  if (correct) {
     game.winnerId = teamId;
     game.victoryReason = 'sudden';
     setPhase(game, 'completed', at);
@@ -371,7 +388,10 @@ export function actGame(source: GameState, set: QuestionSet, actorId: string | '
           game.answerRemainingMs = Math.max(0, (game.phaseDeadline ?? now) - now);
           game.reactionsDone = [game.defenderId];
           setPhase(game, 'reaction', now, PHASE_MS.reaction);
-        } else applyDefenseSkillDuringAnswer(game, set);
+        } else {
+          applyDefenseSkillDuringAnswer(game, set);
+          if (game.phaseDeadline !== null) game.phaseDeadline += fxGrace(game, now);
+        }
       }
       break;
     }

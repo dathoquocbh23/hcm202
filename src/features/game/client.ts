@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GameCommand, GameEvent, GamePhase, Match, SkillId } from './types';
 import type { RoomCommand } from '@/lib/server/room-store';
@@ -32,6 +33,18 @@ export interface PublicGame {
   winnerId: string | null; victoryReason: string | null;
   correctCounts: Record<string, number>; defendedCounts: Record<string, number>;
   elapsedActiveMs: number; events: GameEvent[]; private?: PrivateGame;
+  review?: AnswerReview[];
+  lastAnswer?: AnswerReview | null;
+}
+
+export interface AnswerReview {
+  turn: number; teamId: string; questionId: string; kind: 'fill' | 'abc'; text: string;
+  options?: Record<'A' | 'B' | 'C', string>;
+  submitted: string | null; correctAnswer: string | null;
+  outcome: 'correct' | 'wrong' | 'timeout'; damage: number; sudden: boolean;
+  /** False for matches played before answers were recorded: the submitted answer is unknown. */
+  known: boolean;
+  skills: { name: string; cancelled: boolean }[];
 }
 
 export interface RoomView {
@@ -39,7 +52,7 @@ export interface RoomView {
   serverTime: number; viewer: { role: 'admin' | 'team' | 'display'; teamId?: string };
   displayToken?: string;
   teams: { id: string; name: string; color: string; status: string; ready: boolean; online: boolean; lastSeen: number }[];
-  matches: { id: string; round: Match['round']; teamIds: [string, string] | null; setId?: string | null; status: Match['status']; game: PublicGame | null }[];
+  matches: { id: string; round: Match['round']; teamIds: [string, string] | null; setId?: string | null; status: Match['status']; invitedAt: number | null; game: PublicGame | null }[];
   sets?: { id: string; title: string; reviewStatus?: string }[];
   events?: GameEvent[];
 }
@@ -124,6 +137,16 @@ export function useRoom(code: string, display?: string) {
 
 export function phaseLabel(phase: GamePhase): string {
   return ({ question: 'Chọn câu hỏi', 'attack-skill': 'Kỹ năng công', 'defense-skill': 'Kỹ năng thủ', reaction: 'Phản đòn', answer: 'Trả lời', 'second-answer': 'Cơ hội thứ hai', reveal: 'Kết quả', reward: 'Rút kỹ năng', 'steal-cancel': 'Chặn Đánh Cắp', overflow: 'Bỏ thẻ vượt giới hạn', sudden: 'Đột tử', completed: 'Kết thúc' } as Record<GamePhase, string>)[phase];
+}
+
+/** Moves a team device from a finished match (or its result page) into the team's next live match. */
+export function useFollowActiveMatch(room: RoomView | null, code: string, matchId: string): void {
+  const router = useRouter();
+  const teamId = room?.viewer.role === 'team' ? room.viewer.teamId : undefined;
+  const next = room?.matches.find((match) => match.id !== matchId && match.status === 'active' && match.teamIds?.includes(teamId ?? ''))?.id;
+  useEffect(() => {
+    if (next) router.push(`/rooms/${code}/match/${next}${window.location.search}`);
+  }, [next, code, router]);
 }
 
 export function remainingSeconds(game: PublicGame, now: number): number | null {

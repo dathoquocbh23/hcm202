@@ -22,7 +22,9 @@ export function ActionFocus({ room, game, teamId, now, busy, onAction, onMinimiz
   const clock = remainingSeconds(game, now);
   const attacker = teamId === game.attackerId;
   const eligibleSkills = useMemo(() => own.hand.filter((card) => card.available && (phase === 'attack-skill' ? card.category === 'attack' && !(card.kind === 'confusion' && game.activeQuestion?.kind === 'abc') : phase === 'defense-skill' || phase === 'answer' ? card.category === 'defense' : phase === 'reaction' || phase === 'steal-cancel' ? card.kind === 'nullify' : phase === 'reward' ? card.kind === 'steal' : true)), [own.hand, phase, game.activeQuestion?.kind]);
-  useEffect(() => { setSelected(''); setSelectedSkill(''); }, [phase, game.activeQuestion?.id, game.defenseSkill?.id]);
+  useEffect(() => { setSelected(''); setSelectedSkill(''); }, [phase, game.activeQuestion?.id]);
+  // Playing a defense card mid-answer keeps the answer the team already picked.
+  useEffect(() => { setSelectedSkill(''); }, [game.defenseSkill?.id]);
 
   async function submit(command: GameCommand) { await onAction(command); }
 

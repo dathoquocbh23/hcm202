@@ -4,7 +4,7 @@ import { advanceGame, actGame, createGame } from '../../features/game/engine.ts'
 import sampleJson from '../../features/game/data/sample-set.json' with { type: 'json' };
 import { skillById } from '../../features/game/skills.ts';
 import { validateQuestionSet } from '../../features/game/validate-set.ts';
-import type { GameCommand, GameState, Match, QuestionSet, Room, Team, Viewer } from '../../features/game/types.ts';
+import type { AnswerRecord, GameCommand, GameState, Match, QuestionSet, Room, Team, Viewer } from '../../features/game/types.ts';
 
 const sampleSet = sampleJson as unknown as QuestionSet;
 const palette: Team['color'][] = ['red', 'yellow', 'green', 'blue'];
@@ -113,6 +113,7 @@ function finishMatchInRoom(room: Room, match: Match, at: number): void {
   const second = room.matches.find((item) => item.round === 'semifinal-b');
   const final = room.matches.find((item) => item.round === 'final');
   if (first?.status === 'completed' && second?.status === 'completed' && final && !final.teamIds) {
+    // Finalists confirm again once the admin sends the invitation.
     final.teamIds = [first.game!.winnerId!, second.game!.winnerId!];
     for (const id of final.teamIds) {
       const team = room.teams.find((item) => item.id === id);
@@ -160,6 +161,7 @@ export type RoomCommand =
   | { type: 'ready'; ready: boolean }
   | { type: 'create-bracket' }
   | { type: 'start-match'; matchId: string }
+  | { type: 'invite-final'; matchId: string }
   | { type: 'lock-joins'; locked: boolean }
   | { type: 'import-set'; value: unknown }
   | { type: 'assign-set'; matchId: string; setId: string }
@@ -224,9 +226,18 @@ export async function commandRoom(code: string, viewer: Viewer, command: RoomCom
         if (room.matches.some((item) => item.status === 'active' && item.teamIds?.some((id) => match.teamIds!.includes(id)))) throw new Error('Một đội của trận này đang thi đấu ở trận khác.');
         if (!match.teamIds.every((id) => room.teams.find((team) => team.id === id)?.ready)) throw new Error('Cả hai đội cần báo sẵn sàng.');
         if (match.round === 'final' && room.matches.some((item) => item.round !== 'final' && item.status !== 'completed')) throw new Error('Cần kết thúc cả hai trận bán kết.');
+        if (match.round === 'final' && !match.invitedAt) throw new Error('Hãy mời hai đội vào chung kết trước.');
         match.game = createGame(questionSetFor(room, match), match.teamIds, at);
         match.status = 'active';
         room.events.push({ id: randomUUID(), at, turn: 0, type: 'start-match', text: `${labelRound(match.round)} bắt đầu.` });
+        break;
+      }
+      case 'invite-final': {
+        requireAdmin(viewer);
+        const match = room.matches.find((item) => item.id === command.matchId && item.round === 'final');
+        if (!match?.teamIds || match.status !== 'pending') throw new Error('Chung kết chưa có đủ hai đội.');
+        match.invitedAt = at;
+        room.events.push({ id: randomUUID(), at, turn: 0, type: 'invite-final', text: `Admin mời ${match.teamIds.map((id) => room.teams.find((team) => team.id === id)?.name ?? 'Đội').join(' và ')} vào chung kết.` });
         break;
       }
       case 'lock-joins':
@@ -291,6 +302,39 @@ export function decodeAnswer(room: Room, match: Match, token: string): string {
   return card.id;
 }
 
+/** Matches stored before answerLog existed: rebuild what the event log still tells us. */
+function answersFromEvents(game: GameState): AnswerRecord[] {
+  let questionId = '';
+  const records: AnswerRecord[] = [];
+  for (const event of game.events) {
+    const asked = event.type === 'question' ? /câu hỏi (\S+)\./.exec(event.text) : event.type === 'sudden' ? /câu (\S+)\./.exec(event.text) : null;
+    if (asked) questionId = asked[1];
+    if (event.type === 'answer-result' && event.teamId) {
+      const outcome = event.outcome ?? (event.text.startsWith('Trả lời đúng') ? 'correct' : event.text.startsWith('Hết giờ') ? 'timeout' : 'wrong');
+      records.push({ turn: event.turn, questionId, teamId: event.teamId, submitted: null, outcome, damage: event.damage ?? Number(/(\d+) sát thương/.exec(event.text)?.[1] ?? 0), skills: [] });
+    }
+  }
+  return records;
+}
+
+/** Full question-by-question review; only sent once the match is over, since it holds the answers. */
+function reviewAnswers(set: QuestionSet, game: GameState) {
+  const label = (question: QuestionSet['questions'][number], id: string | null) => !id ? null
+    : question.kind === 'abc' ? `${id}. ${question.options[id as 'A' | 'B' | 'C'] ?? ''}`
+    : set.answers.find((card) => card.id === id)?.text ?? set.decoys.find((card) => card.id === id)?.text ?? id;
+  return (game.answerLog ?? answersFromEvents(game)).flatMap((entry) => {
+    const question = set.questions.find((item) => item.id === entry.questionId);
+    if (!question) return [];
+    return [{
+      turn: entry.turn, teamId: entry.teamId, questionId: question.id, kind: question.kind, text: question.text,
+      options: question.kind === 'abc' ? question.options : undefined,
+      submitted: label(question, entry.submitted), correctAnswer: label(question, question.kind === 'abc' ? question.correctOption : question.answerId),
+      outcome: entry.outcome, damage: entry.damage, sudden: entry.sudden ?? false, known: Boolean(game.answerLog),
+      skills: entry.skills.map((skill) => ({ name: skillById[skill.kind].name, cancelled: skill.cancelled }))
+    }];
+  });
+}
+
 export function projectRoom(room: Room, viewer: Viewer) {
   const at = Date.now();
   return {
@@ -298,7 +342,7 @@ export function projectRoom(room: Room, viewer: Viewer) {
     viewer, serverTime: at,
     displayToken: viewer.role === 'admin' ? adminDisplayToken(room) : undefined,
     teams: room.teams.filter((team) => viewer.role === 'admin' || team.status === 'approved' || viewer.role === 'team' && team.id === viewer.teamId).map((team) => ({ id: team.id, name: team.name, color: team.color, status: team.status, ready: team.ready, online: at - team.lastSeen < 30_000, lastSeen: team.lastSeen })),
-    matches: room.matches.map((match) => ({ id: match.id, round: match.round, teamIds: match.teamIds, setId: viewer.role === 'admin' ? match.setId : undefined, status: match.status, game: match.game ? projectGame(room, match, viewer) : null })),
+    matches: room.matches.map((match) => ({ id: match.id, round: match.round, teamIds: match.teamIds, setId: viewer.role === 'admin' ? match.setId : undefined, status: match.status, invitedAt: match.invitedAt ?? null, game: match.game ? projectGame(room, match, viewer) : null })),
     sets: viewer.role === 'admin' ? room.sets.map((set) => ({ id: set.id, title: set.title, reviewStatus: set.reviewStatus })) : undefined,
     events: viewer.role === 'admin' ? room.events.slice(-30) : undefined
   };
@@ -333,6 +377,9 @@ function projectGame(room: Room, match: Match, viewer: Viewer) {
     correctCounts: game.correctCounts, defendedCounts: game.defendedCounts,
     elapsedActiveMs: game.elapsedActiveMs + (game.paused || game.phase === 'completed' ? 0 : Math.max(0, Date.now() - game.lastActiveAt)),
     events: game.phase === 'completed' ? game.events : game.events.slice(-18),
+    review: game.phase === 'completed' ? reviewAnswers(set, game) : undefined,
+    // Sudden-death misses stay hidden until the end so the other team gains nothing from them.
+    lastAnswer: reviewAnswers(set, game).filter((entry) => !entry.sudden || game.phase === 'completed').at(-1) ?? null,
     private: ownTeam ? {
       hand: game.hands[ownTeam].map((card) => ({ id: card.id, kind: card.kind, name: skillById[card.kind].name, category: skillById[card.kind].category, description: skillById[card.kind].description, available: card.acquiredTurn < game.turn })),
       candidates: game.phase === 'question' && ownTeam === game.attackerId ? game.candidates.map((id) => { const q = set.questions.find((item) => item.id === id)!; return { id: q.id, kind: q.kind, text: q.text, options: q.kind === 'abc' ? q.options : undefined }; }) : [],

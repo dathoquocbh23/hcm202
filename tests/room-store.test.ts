@@ -216,3 +216,42 @@ test('database errors do not expose private data or key values', async (t) => {
     return true;
   });
 });
+
+test('finished semifinals fill the final, which starts only after the invitation and both teams are ready', async (t) => {
+  const db = database(t);
+  const room = await createRoom('Final pairing', true);
+  const body = db.records.get(room.code)!.body;
+  body.teams = ['a', 'b', 'c', 'd'].map((id) => ({ id, name: id.toUpperCase(), color: 'red', status: 'approved', ready: true, tokenHash: id, lastSeen: 0, joinedAt: 0 }));
+  // Each semifinal sits in an expired answer phase that knocks out its defender on timeout.
+  const nearlyOver = (ids: [string, string]) => {
+    const game = createGame(room.sets[0], ids, Date.now() - 60_000);
+    game.phase = 'answer';
+    game.activeQuestionId = game.candidates[0];
+    game.phaseDeadline = Date.now() - 1;
+    game.hp[game.defenderId] = 60;
+    return game;
+  };
+  body.matches = [
+    { id: 'semi-a', round: 'semifinal-a', teamIds: ['a', 'b'], setId: room.sets[0].id, status: 'active', game: nearlyOver(['a', 'b']) },
+    { id: 'semi-b', round: 'semifinal-b', teamIds: ['c', 'd'], setId: room.sets[0].id, status: 'active', game: nearlyOver(['c', 'd']) },
+    { id: 'final', round: 'final', teamIds: null, setId: room.sets[0].id, status: 'pending', game: null }
+  ];
+  const saved = (await getRoom(room.code))!;
+  const [first, second, final] = saved.matches;
+  assert.equal(first.status, 'completed');
+  assert.equal(second.status, 'completed');
+  assert.deepEqual(final.teamIds, [first.game!.winnerId, second.game!.winnerId]);
+  assert.ok(final.teamIds!.every((id) => !saved.teams.find((team) => team.id === id)!.ready));
+  await assert.rejects(commandRoom(room.code, { role: 'admin' }, { type: 'start-match', matchId: 'final' }, 'start-early', saved.revision), /Cả hai đội cần báo sẵn sàng/);
+  const invited = await commandRoom(room.code, { role: 'admin' }, { type: 'invite-final', matchId: 'final' }, 'invite-final', saved.revision);
+  assert.ok(invited.matches[2].invitedAt);
+  let ready = invited;
+  for (const teamId of final.teamIds!) ready = await commandRoom(room.code, { role: 'team', teamId }, { type: 'ready', ready: true }, `ready-final-${teamId}`, ready.revision);
+  const started = await commandRoom(room.code, { role: 'admin' }, { type: 'start-match', matchId: 'final' }, 'start-final', ready.revision);
+  assert.equal(started.matches[2].status, 'active');
+  const view = JSON.parse(JSON.stringify(projectRoom(saved, { role: 'display' })));
+  assert.equal(view.matches[0].game.lastAnswer.outcome, 'timeout');
+  assert.equal(view.matches[0].game.lastAnswer.known, true);
+  assert.ok(view.matches[0].game.lastAnswer.correctAnswer);
+  assert.equal(view.matches[0].game.review.length, 1);
+});

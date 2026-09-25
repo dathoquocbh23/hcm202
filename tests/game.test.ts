@@ -77,7 +77,7 @@ test('Second Chance preserves the original deadline and a corrected answer costs
   assert.equal(game.hp[defender], 270);
 });
 
-test('the defender can use Hint or Narrow while reading the answer without resetting the deadline', () => {
+test('the defender can use Hint or Narrow while reading the answer and gets the card animation time back', () => {
   for (const kind of ['hint', 'narrow'] as const) {
     const initial = createGame(set, ['alpha', 'beta'], startAt);
     const question = selected(initial);
@@ -86,7 +86,7 @@ test('the defender can use Hint or Narrow while reading the answer without reset
     const originalDeadline = answering.phaseDeadline;
     const played = actGame(answering, set, answering.defenderId, { type: 'play-skill', cardId: `defense-${kind}` }, startAt + 300);
     assert.equal(played.phase, 'answer');
-    assert.equal(played.phaseDeadline, originalDeadline);
+    assert.equal(played.phaseDeadline, originalDeadline! + 2_000);
     assert.equal(played.defenseSkill?.kind, kind);
     if (kind === 'narrow') {
       assert.equal(played.removedAnswers.length, question.kind === 'abc' ? 1 : 4);
@@ -102,7 +102,20 @@ test('Extra Time adds ten seconds when used during the answer', () => {
   initial.hands[initial.defenderId].push({ id: 'extra-time-test', kind: 'extra-time', acquiredTurn: 0 });
   const answering = openAnswer(initial, question, startAt);
   const played = actGame(answering, set, answering.defenderId, { type: 'play-skill', cardId: 'extra-time-test' }, startAt + 300);
-  assert.equal(played.phaseDeadline, answering.phaseDeadline! + 10_000);
+  assert.equal(played.phaseDeadline, answering.phaseDeadline! + 10_000 + 2_000);
+});
+
+test('an attack skill does not eat into the answer time while its animation plays', () => {
+  const initial = createGame(set, ['alpha', 'beta'], startAt);
+  const question = selected(initial);
+  initial.hands[initial.attackerId].push({ id: 'rush-test', kind: 'rush', acquiredTurn: 0 });
+  const chosen = actGame(initial, set, initial.attackerId, { type: 'choose-question', questionId: question.id }, startAt + 100);
+  const answering = actGame(chosen, set, chosen.attackerId, { type: 'play-skill', cardId: 'rush-test' }, startAt + 200);
+  assert.equal(answering.phase, 'answer');
+  assert.equal(answering.phaseDeadline, startAt + 200 + 7_000 + 2_000);
+  const plain = createGame(set, ['alpha', 'beta'], startAt);
+  const passed = openAnswer(plain, selected(plain), startAt);
+  assert.equal(passed.phaseDeadline, startAt + 200 + 15_000);
 });
 
 test('Nullify can cancel a defender card played during the answer while preserving answer time', () => {
@@ -117,7 +130,7 @@ test('Nullify can cancel a defender card played during the answer while preservi
   const resumed = actGame(reacted, set, answering.attackerId, { type: 'nullify', targetCardId: 'hint-test' }, startAt + 500);
   assert.equal(resumed.phase, 'answer');
   assert.equal(resumed.cancelledSkillId, 'hint-test');
-  assert.equal(resumed.phaseDeadline, startAt + 500 + reacted.answerRemainingMs!);
+  assert.equal(resumed.phaseDeadline, startAt + 500 + reacted.answerRemainingMs! + 2_000);
 });
 
 test('an admin can pause the clock but cannot submit a team answer', () => {
